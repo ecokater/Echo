@@ -8,3 +8,7 @@ qq-botpy
 python-dotenv
 websockets
 httpx
+pyjwt>=2.8
+bcrypt>=4.0
+python-multipart
+psycopg2-binary

@@ -22,6 +22,7 @@ from database import SessionLocal, Base, engine, Persona
 from services.relay_service import QQBotRelay
 from services.janitor_service import janitor_loop, add_system_log
 from routers import personas, chat, relay, memory, system, ws as ws_router
+from routers import auth, wallet, billing
 
 # --- App factory ---
 app = FastAPI(title="Amber Engine API", description="数字生命核心引擎")
@@ -41,6 +42,9 @@ app.include_router(relay.router)
 app.include_router(memory.router)
 app.include_router(system.router)
 app.include_router(ws_router.router)
+app.include_router(auth.router)
+app.include_router(wallet.router)
+app.include_router(billing.router)
 
 
 @contextmanager
@@ -68,6 +72,12 @@ async def startup_event():
             ("personas", "bot_app_secret", "TEXT"),
             ("personas", "bot_token", "TEXT"),
             ("personas", "last_incubation_time", "DATETIME"),
+            ("personas", "intimacy", "FLOAT DEFAULT 50.0"),
+            ("personas", "activity", "FLOAT DEFAULT 50.0"),
+            ("personas", "curiosity", "FLOAT DEFAULT 50.0"),
+            ("personas", "response_temp", "FLOAT DEFAULT 70.0"),
+            ("personas", "proactivity", "FLOAT DEFAULT 55.0"),
+            ("personas", "memory_depth", "FLOAT DEFAULT 88.0"),
             ("messages", "weight", "FLOAT DEFAULT 1.0"),
             ("messages", "is_pinned", "BOOLEAN DEFAULT 0"),
             ("persona_corpus", "weight", "FLOAT DEFAULT 1.0"),
@@ -104,6 +114,28 @@ async def startup_event():
         except Exception as e:
             print(f"【全局洗盘失败】: {e}")
             db.rollback()
+
+    # Seed default fragment SKUs
+    with get_db_context() as db:
+        try:
+            from routers.billing import seed_skus
+            seed_skus(db)
+        except Exception as e:
+            print(f"【SKU seed 失败】: {e}")
+
+    # Migrate user_id columns onto legacy tables
+    with get_db_context() as db:
+        for table in ("personas", "messages", "persona_corpus"):
+            try:
+                db.execute(text(f"SELECT user_id FROM {table} LIMIT 1"))
+            except Exception:
+                db.rollback()
+                try:
+                    db.execute(text(f"ALTER TABLE {table} ADD COLUMN user_id VARCHAR"))
+                    db.commit()
+                except Exception as e:
+                    print(f"【user_id 迁移失败 {table}】: {e}")
+                    db.rollback()
 
     asyncio.create_task(janitor_loop())
     add_system_log("Amber Engine 启动完成。")

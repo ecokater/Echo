@@ -14,5 +14,21 @@ DATA_DIR = os.path.join(BASE_DIR, "data")
 # 确保数据目录存在（物理自动补全）
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# SQLite 数据库配置
-DATABASE_URL = f"sqlite:///{os.path.join(DATA_DIR, 'amber_memory.db')}"
+# 数据库：默认 SQLite（本地开发），生产经 DATABASE_URL 切 PostgreSQL
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    f"sqlite:///{os.path.join(DATA_DIR, 'amber_memory.db')}",
+)
+
+# 鉴权 / JWT
+SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret-change-in-prod-please")
+JWT_ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "120"))
+REFRESH_TOKEN_EXPIRE_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRE_DAYS", "30"))
+
+# 商业化
+SIGNUP_GIFT_FRAGMENTS = int(os.getenv("SIGNUP_GIFT_FRAGMENTS", "100"))
+COST_PER_CHAT = int(os.getenv("COST_PER_CHAT", "1"))
+COST_PER_DISTILL = int(os.getenv("COST_PER_DISTILL", "20"))
+COST_PER_SNAPSHOT = int(os.getenv("COST_PER_SNAPSHOT", "5"))
+LOW_BALANCE_THRESHOLD = int(os.getenv("LOW_BALANCE_THRESHOLD", "10"))

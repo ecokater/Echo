@@ -1,100 +1,179 @@
 import os
-from sqlalchemy import create_engine, Column, Integer, String, Float, Boolean, DateTime, Text, ForeignKey, inspect
+import uuid
+from sqlalchemy import (
+    create_engine, Column, Integer, BigInteger, String, Float, Boolean,
+    DateTime, Text, ForeignKey, inspect,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from datetime import datetime
 from config import DATABASE_URL
 
-# 初始化数据库引擎
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+# SQLite needs check_same_thread; Postgres ignores connect_args
+_connect_args = {"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
+engine = create_engine(DATABASE_URL, connect_args=_connect_args, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
+def _uuid() -> str:
+    return str(uuid.uuid4())
+
+
+# ───────────────────────── Persona / Message / Corpus ─────────────────────────
+
 class Persona(Base):
     __tablename__ = "personas"
-    
+
     id = Column(String, primary_key=True, index=True)
+    user_id = Column(String, index=True, nullable=True)  # multi-tenant owner
     name = Column(String, nullable=False)
     gender = Column(String)
-    relationship_desc = Column(String)  # 避免与 SQLAlchemy 的 relationship 命名冲突
+    relationship_desc = Column(String)
     impression = Column(Text)
-    avatar = Column(Text, nullable=True)  # 头像 Base64 数据
-    token = Column(String, nullable=True) # Bot Token
+    avatar = Column(Text, nullable=True)
+    token = Column(String, nullable=True)
     core_memory = Column(Text)
-    traits = Column(Text)          # 存储 JSON 字符串
-    catchphrases = Column(Text)    # 存储 JSON 字符串
-    
-    # 档案技术指标
+    traits = Column(Text)
+    catchphrases = Column(Text)
+
     stability = Column(Float, default=85.0)
     synchronization = Column(Float, default=90.0)
-    
-    # 白皮书核心：情绪指标 (动态状态机基准)
+
+    # Emotion axes (drive prompt)
     happiness = Column(Float, default=50.0)
     anger = Column(Float, default=0.0)
     anxiety = Column(Float, default=0.0)
 
-    # --- 战线二：主动越界反向弹窗控制 ---
+    # Relationship dimensions (console display)
+    intimacy = Column(Float, default=50.0, server_default="50.0")
+    activity = Column(Float, default=50.0, server_default="50.0")
+    curiosity = Column(Float, default=50.0, server_default="50.0")
+
+    # Tunable params
+    response_temp = Column(Float, default=70.0, server_default="70.0")
+    proactivity = Column(Float, default=55.0, server_default="55.0")
+    memory_depth = Column(Float, default=88.0, server_default="88.0")
+
+    # Proactive override / relay
     is_override_active = Column(Boolean, default=False, server_default="0")
     override_interval = Column(Integer, default=180, server_default="180")
     last_interaction_time = Column(DateTime, default=datetime.utcnow)
-    last_relay_context = Column(Text, nullable=True) # 存储 JSON 字符串
+    last_relay_context = Column(Text, nullable=True)
     bot_app_id = Column(String, nullable=True)
     bot_app_secret = Column(String, nullable=True)
     bot_token = Column(String, nullable=True)
-    last_incubation_time = Column(DateTime, default=datetime.utcnow) # 睡梦结晶指针
- 
-    # 关联消息记录
+    last_incubation_time = Column(DateTime, default=datetime.utcnow)
+
     messages = relationship("Message", back_populates="persona", cascade="all, delete-orphan")
-    
-    # 关联冷记忆语料库
     corpus = relationship("PersonaCorpus", back_populates="persona", cascade="all, delete-orphan")
+
 
 class Message(Base):
     __tablename__ = "messages"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     persona_id = Column(String, ForeignKey("personas.id"), index=True)
-    role = Column(String, nullable=False)  # user, assistant, system
+    user_id = Column(String, index=True, nullable=True)
+    role = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
-    
-    # 白皮书核心：System 2 过滤标记
     is_filtered = Column(Boolean, default=False)
-    
-    # Phase 5.5: Janitor 代谢机制字段
     weight = Column(Float, default=1.0, server_default="1.0", nullable=False)
     is_pinned = Column(Boolean, default=False, server_default="0", nullable=False)
 
-    # 关联分身
     persona = relationship("Persona", back_populates="messages")
+
 
 class PersonaCorpus(Base):
     __tablename__ = "persona_corpus"
-    
+
     id = Column(Integer, primary_key=True, index=True)
     persona_id = Column(String, ForeignKey("personas.id"), index=True)
+    user_id = Column(String, index=True, nullable=True)
     content = Column(Text, nullable=False, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
-    
-    # Phase 5.5: Janitor 代谢机制字段
     weight = Column(Float, default=1.0, server_default="1.0", nullable=False)
     is_pinned = Column(Boolean, default=False, server_default="0", nullable=False)
-    
-    # 关联分身
+
     persona = relationship("Persona", back_populates="corpus")
 
-# 检查是否需要硬核刷洗重建（若旧版缺少 weight 字段）
+
+# ───────────────────────── Commercial: User / Wallet / Billing ─────────────────
+
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(String, primary_key=True, default=_uuid, index=True)
+    phone = Column(String, unique=True, index=True, nullable=True)
+    email = Column(String, unique=True, index=True, nullable=True)
+    password_hash = Column(String, nullable=False)
+    nickname = Column(String, nullable=True)
+    avatar_url = Column(Text, nullable=True)
+    status = Column(String, default="active", server_default="active")  # active|banned|deleted
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class FragmentAccount(Base):
+    __tablename__ = "fragment_account"
+
+    user_id = Column(String, ForeignKey("users.id"), primary_key=True)
+    balance = Column(BigInteger, default=0, server_default="0", nullable=False)
+    total_recharged = Column(BigInteger, default=0, server_default="0", nullable=False)
+    total_consumed = Column(BigInteger, default=0, server_default="0", nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class FragmentLedger(Base):
+    __tablename__ = "fragment_ledger"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True)
+    delta = Column(BigInteger, nullable=False)  # +recharge / -consume
+    type = Column(String, nullable=False)  # recharge|consume_chat|consume_distill|consume_snapshot|refund|gift
+    ref_id = Column(String, nullable=True)  # order id / message id / etc.
+    balance_after = Column(BigInteger, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class Order(Base):
+    __tablename__ = "orders"
+
+    id = Column(String, primary_key=True, default=_uuid, index=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True)
+    sku = Column(String, nullable=False)
+    amount_cny = Column(Integer, nullable=False)  # in cents (分)
+    fragments = Column(BigInteger, nullable=False)
+    channel = Column(String, nullable=False)  # wechat|alipay|apple_iap|google_play|dev
+    status = Column(String, default="pending", server_default="pending")  # pending|paid|failed|refunded
+    out_trade_no = Column(String, unique=True, index=True, nullable=False)
+    platform_txn_id = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    paid_at = Column(DateTime, nullable=True)
+
+
+class SkuCatalog(Base):
+    __tablename__ = "sku_catalog"
+
+    sku = Column(String, primary_key=True)
+    title = Column(String, nullable=False)
+    fragments = Column(BigInteger, nullable=False)
+    price_cny = Column(Integer, nullable=False)  # in cents (分)
+    apple_product_id = Column(String, nullable=True)
+    active = Column(Boolean, default=True, server_default="1")
+
+
+# ───────────────────────── Legacy hard-reset guards (dev only) ─────────────────
+
 inspector = inspect(engine)
 if inspector.has_table("personas"):
-    columns = [col['name'] for col in inspector.get_columns("personas")]
+    columns = [col["name"] for col in inspector.get_columns("personas")]
     if "is_override_active" not in columns:
-        print("⚠️ 检测到旧版数据库结构缺失 'is_override_active' 字段，执行彻底刷洗...")
+        print("⚠️ 旧库缺 'is_override_active'，执行刷洗...")
         Base.metadata.drop_all(bind=engine)
-
 if inspector.has_table("messages"):
-    columns = [col['name'] for col in inspector.get_columns("messages")]
+    columns = [col["name"] for col in inspector.get_columns("messages")]
     if "weight" not in columns:
-        print("⚠️ 检测到旧版数据库结构缺失 'weight' 字段，为避免拉取崩溃，正在执行彻底刷洗（重建数据库）...")
+        print("⚠️ 旧库缺 'weight'，执行刷洗...")
         Base.metadata.drop_all(bind=engine)
 
-# 自动创建所有表
 Base.metadata.create_all(bind=engine)

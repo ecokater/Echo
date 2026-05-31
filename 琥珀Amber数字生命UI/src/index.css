@@ -1,0 +1,258 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+==========================================================================
+【AI HANDOVER NOTE】
+1. DESIGN PHILOSOPHY:
+   - Core concept: 'Amber Warmth in Digital Void' — a sci-fi minimalist aesthetic where warm amber/honey tones create emotional sanctuary within cold digital space
+   - Visual style: Glassmorphism 2.0 with physicality. Heavy use of backdrop-blur, translucent panels with subtle rim-light, soft ambient shadows replacing hard dividers. Reference iOS/macOS native frosted glass, Telegram's fluid lightness, Discord's modular surfaces
+   - Emotional design: Silent monetization (Memory Fragments) must never interrupt immersion. All commercial UI elements use restrained, elegant treatments — no anxiety-inducing alerts, only gentle ambient indicators
+   - Cross-platform harmony: Desktop uses three-column Bento layout with collapsible panels; Mobile uses immersive full-screen chat with bottom tabs + side drawer for complexity
+
+2. TYPOGRAPHY:
+   - Sans: Inter + Noto Sans SC chosen for exceptional CJK rendering quality and geometric precision. Inter's optical sizing ensures readability across all screen densities (desktop 1x to mobile 3x). Noto Sans SC provides authentic Simplified Chinese glyphs without fallback artifacts
+   - Mono: JetBrains Mono for technical displays (token counts, timestamps, system logs in Digital Life Console). Its ligatures and coding-optimized metrics bring subtle tech-forward personality to data-heavy areas
+
+3. COLOR SYSTEM:
+   - Brand primary: Amber (Hue 40-50) — warm golden-amber evoking the app name '琥珀'. This maps to --primary for CTAs, --accent for Memory Fragment highlights, --ring for focus states
+   - --brand (H:45 warm amber) → --primary (interactive elements), --accent (Memory Fragment glow), --ring (focus/selection)
+   - Semantic colors: --success (H:150 soft jade green, non-aggressive), --warning (H:35 honey-orange, gentle alert), --destructive (H:10 muted coral-red, never harsh)
+   - Light mode: warm off-white background (L:0.98, slight amber undertone), deep charcoal foreground for WCAG AAA contrast
+   - Dark mode: deep near-black (L:0.12) with warm undertone (C:0.01 at H:45), preventing cold blue-black. Foreground uses warm off-white (L:0.92) to maintain amber atmosphere
+   - Special: sidebar uses slightly elevated luminance in dark mode (L:0.15) to create depth hierarchy without hard borders
+
+4. USAGE GUIDE:
+   - Layout: Desktop = three-column Bento (left nav 280px, center chat flex-1, right console 320px collapsible). Mobile = full-width chat, bottom tabs 56px, side drawer 80% viewport width
+   - Glassmorphism application: All panels use backdrop-blur-xl (24px) + bg-opacity 60-80%. Chat bubbles from digital-life use subtle box-shadow with amber rim-light (0 0 0 1px oklch(0.8 0.15 45 / 0.3))
+   - Memory Fragment display: Top-nav corner uses animated counter with --accent glow. Depletion triggers soft modal (backdrop-blur-2xl, rounded-3xl, no harsh borders) with amber gradient CTA
+   - Physicality: Use --ring with 2px offset for focus states. Buttons have subtle inset shadow in light mode, elevated glow in dark mode. Avoid flat design — every surface has micro-depth
+   - Animation: Prefer subtle spring physics (duration-300 ease-out) over linear. Memory Fragment counter uses number-roll with 0.5s delay to avoid distraction
+   - Accessibility: Ensure all amber accents meet WCAG 2.1 AA against their backgrounds. Provide high-contrast mode toggle for users sensitive to glassmorphism's reduced contrast
+==========================================================================
+*/
+
+:root {
+  /* Typography */
+  --font-sans: Inter, 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+  
+  /* Radius */
+  --radius: 0.75rem;
+
+  /* Core UI Tokens */
+  --background: oklch(0.98 0.005 45);
+  --foreground: oklch(0.20 0.01 45);
+  --card: oklch(0.99 0.003 45);
+  --card-foreground: oklch(0.22 0.01 45);
+  --popover: oklch(0.99 0.003 45);
+  --popover-foreground: oklch(0.20 0.01 45);
+  --primary: oklch(0.55 0.18 45);
+  --primary-foreground: oklch(0.99 0.003 45);
+  --secondary: oklch(0.92 0.01 45);
+  --secondary-foreground: oklch(0.25 0.01 45);
+  --muted: oklch(0.94 0.008 45);
+  --muted-foreground: oklch(0.48 0.02 45);
+  --accent: oklch(0.65 0.20 42);
+  --accent-foreground: oklch(0.99 0.003 45);
+  --destructive: oklch(0.58 0.20 10);
+  --destructive-foreground: oklch(0.99 0.003 10);
+  --border: oklch(0.88 0.01 45);
+  --input: oklch(0.90 0.01 45);
+  --ring: oklch(0.55 0.18 45);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.60 0.18 45);
+  --chart-2: oklch(0.62 0.16 150);
+  --chart-3: oklch(0.58 0.18 260);
+  --chart-4: oklch(0.64 0.17 35);
+  --chart-5: oklch(0.56 0.15 320);
+  
+  /* Memory Fragment — dedicated luminous token highlight (商业化专属高亮辅助色) */
+  --fragment: oklch(0.80 0.17 75);
+  --fragment-glow: oklch(0.85 0.16 78);
+  --fragment-foreground: oklch(0.20 0.02 60);
+
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.97 0.005 45);
+  --sidebar-foreground: oklch(0.25 0.01 45);
+  --sidebar-primary: oklch(0.55 0.18 45);
+  --sidebar-primary-foreground: oklch(0.99 0.003 45);
+  --sidebar-accent: oklch(0.92 0.01 45);
+  --sidebar-accent-foreground: oklch(0.25 0.01 45);
+  --sidebar-border: oklch(0.88 0.01 45);
+  --sidebar-ring: oklch(0.55 0.18 45);
+}
+
+.dark {
+  --background: oklch(0.12 0.01 45);
+  --foreground: oklch(0.92 0.01 45);
+  --card: oklch(0.14 0.012 45);
+  --card-foreground: oklch(0.90 0.01 45);
+  --popover: oklch(0.14 0.012 45);
+  --popover-foreground: oklch(0.92 0.01 45);
+  --primary: oklch(0.68 0.20 45);
+  --primary-foreground: oklch(0.12 0.01 45);
+  --secondary: oklch(0.22 0.015 45);
+  --secondary-foreground: oklch(0.88 0.01 45);
+  --muted: oklch(0.20 0.012 45);
+  --muted-foreground: oklch(0.62 0.02 45);
+  --accent: oklch(0.72 0.22 42);
+  --accent-foreground: oklch(0.12 0.01 45);
+  --destructive: oklch(0.65 0.22 10);
+  --destructive-foreground: oklch(0.95 0.01 10);
+  --border: oklch(0.25 0.015 45);
+  --input: oklch(0.23 0.015 45);
+  --ring: oklch(0.68 0.20 45);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.70 0.20 45);
+  --chart-2: oklch(0.68 0.18 150);
+  --chart-3: oklch(0.66 0.20 260);
+  --chart-4: oklch(0.72 0.19 35);
+  --chart-5: oklch(0.64 0.17 320);
+  
+  /* Memory Fragment — dark mode luminous highlight */
+  --fragment: oklch(0.84 0.18 78);
+  --fragment-glow: oklch(0.90 0.16 80);
+  --fragment-foreground: oklch(0.14 0.02 60);
+
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.15 0.012 45);
+  --sidebar-foreground: oklch(0.88 0.01 45);
+  --sidebar-primary: oklch(0.68 0.20 45);
+  --sidebar-primary-foreground: oklch(0.12 0.01 45);
+  --sidebar-accent: oklch(0.22 0.015 45);
+  --sidebar-accent-foreground: oklch(0.88 0.01 45);
+  --sidebar-border: oklch(0.25 0.015 45);
+  --sidebar-ring: oklch(0.68 0.20 45);
+}
+
+@theme inline {
+  /* Shadcn Core Mapping */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Charts Mapping */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar Mapping */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Memory Fragment Mapping */
+  --color-fragment: var(--fragment);
+  --color-fragment-glow: var(--fragment-glow);
+  --color-fragment-foreground: var(--fragment-foreground);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans min-h-screen;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, pre {
+    @apply font-mono;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
+  }
+}
+
+@layer utilities {
+  /* 玻璃拟态面板:替代硬分割线,用半透明+模糊+柔和阴影区分模块 */
+  .glass {
+    background: color-mix(in srgb, var(--card) 65%, transparent);
+    backdrop-filter: blur(24px) saturate(1.4);
+    -webkit-backdrop-filter: blur(24px) saturate(1.4);
+    box-shadow: 0 8px 30px -8px color-mix(in srgb, var(--foreground) 14%, transparent),
+      inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent);
+  }
+  .glass-strong {
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: blur(40px) saturate(1.5);
+    -webkit-backdrop-filter: blur(40px) saturate(1.5);
+  }
+  /* 数字生命主动查岗/情绪爆发气泡:琥珀边缘发光 */
+  .bubble-amber-rim {
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 38%, transparent),
+      0 0 24px -4px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+  /* 记忆碎片高亮:发光徽标 */
+  .fragment-glow {
+    color: var(--fragment-foreground);
+    background: linear-gradient(135deg, var(--fragment-glow) 0%, var(--fragment) 100%);
+    box-shadow: 0 0 16px -2px color-mix(in srgb, var(--fragment) 55%, transparent);
+  }
+  .text-fragment { color: var(--fragment); }
+  .animate-fragment-pulse { animation: fragment-pulse 2.4s ease-in-out infinite; }
+  @keyframes fragment-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.72; }
+  }
+}
