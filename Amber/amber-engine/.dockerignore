@@ -1,0 +1,18 @@
+# Keep the image small & avoid leaking local state
+__pycache__/
+*.pyc
+*.pyo
+.env
+.venv/
+venv/
+data/
+*.db
+*.sqlite
+*.sqlite3
+dist/
+build/
+*.spec
+.pytest_cache/
+.mypy_cache/
+check_db_schema.py
+check_indexes.py

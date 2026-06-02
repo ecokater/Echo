@@ -29,7 +29,7 @@
 │    ├─ FastAPI (gunicorn+uvicorn workers)                      │
 │    │    routers/  services/  repositories/                   │
 │    │    + auth(JWT)  + wallet(碎片)  + billing(支付)          │
-│    │    + Amber 引擎: chat/RAG/janitor/relay/情绪机           │
+│    │    + Amber 引擎: chat/RAG/janitor/情绪机                │
 │    ├─ PostgreSQL (用户/碎片/订单/persona/message/corpus)     │
 │    ├─ Redis (会话/限流/分布式锁-碎片原子扣减)                 │
 │    └─ MinIO/OSS (头像/语料/图片)                              │
@@ -85,7 +85,7 @@ sku_catalog(sku, title, fragments, price_cny, apple_product_id, active)
 
 | 编号 | 任务 | 关键文件 | 工时 |
 |------|------|---------|------|
-| B-0 | **前置**：完成 `main.py` 精简——接入 routers/services/repositories，注入 `state.qq_relay`，挂载 ws router（当前仍是旧单体） | `main.py` | 0.5d |
+| B-0 | **前置**：完成 `main.py` 精简——接入 routers/services/repositories，挂载 ws router（当前仍是旧单体） | `main.py` | 0.5d |
 | B-1 | SQLite→PostgreSQL，`DATABASE_URL` 环境变量，连接池 | `config.py` `database.py` | 1d |
 | B-2 | 三表加 `user_id` + repositories 全量加租户过滤 | `database.py` `repositories/` | 2d |
 | B-3 | 用户系统 + JWT(access/refresh) + 手机号/密码登录注册 | 新增 `routers/auth.py` `services/auth_service.py` | 2.5d |
@@ -123,7 +123,7 @@ POST /api/billing/verify/apple     # iOS 收据校验
 | F-3 | 实时层：WebSocket hook（移植现有 `useChat` 逻辑，带 JWT 握手） | `src/hooks/useChat.ts` | 1d |
 | F-4 | 三栏 Bento + 移动双形态（设计稿已具雏形，补全交互） | `App.tsx`→`pages/chat` | 2d |
 | F-5 | **碎片系统**：余额徽章(已设计) + 耗尽弹窗(已设计) + 充值页(SKU列表/支付拉起/结果轮询) | 新增 `pages/recharge` | 3d |
-| F-6 | **业务组件移植**：人格蒸馏向导、QQ中继面板、记忆管理、身份详情（从 `main_ui/components/amber/` 迁移并套新设计 token） | `main_ui` → 设计稿 | 4d |
+| F-6 | **业务组件移植**：人格蒸馏向导、记忆管理、身份详情（从 `main_ui/components/amber/` 迁移并套新设计 token） | `main_ui` → 设计稿 | 4d |
 | F-7 | 登录/注册页 + 鉴权路由守卫 | 新增 `pages/auth` | 1.5d |
 | F-8 | 数字生命控制台：情绪状态机 + 参数微调（对接新情绪/配置 API） | `pages/chat` Console | 2d |
 | F-9 | 明暗主题持久化 + i18n（保留中/英/日） | `src/lib/` | 1d |
@@ -137,7 +137,7 @@ POST /api/billing/verify/apple     # iOS 收据校验
 | P-1 | Web 部署（Vite build → 静态托管 / Caddy） | 0.5d |
 | P-2 | 桌面 Electron 包装 Vite 产物（复用现有 electron-builder，Win+Mac target） | 2d |
 | P-3 | Capacitor 初始化 + Android/iOS 工程，WebView 加载 Vite 产物 | 2d |
-| P-4 | 推送通知（主动查岗）：个推/极光(国内) + APNs(iOS) | 3d |
+| P-4 | 系统推送通知：个推/极光(国内) + APNs(iOS) | 3d |
 | P-5 | **充值渠道按端隔离**：Web/桌面/Android=微信支付宝；iOS=Apple IAP（编译期/运行期开关） | 2d |
 | P-6 | 安全存储 JWT（Capacitor Preferences + Keychain/Keystore）、安全区适配 | 1d |
 
@@ -153,7 +153,6 @@ POST /api/billing/verify/apple     # iOS 收据校验
 | C-4 | App 上架：华为/小米/OPPO/vivo/应用宝 多渠道（各自审核） | 1-2 周/渠道 |
 | C-5 | **iOS App Store**：Apple 开发者账号 + IAP 内购商品配置 + 隐私清单 + 审核 | 1-3 周 |
 | C-6 | 隐私政策/用户协议/虚拟商品说明/未成年人保护/账号注销入口 | 1d |
-| C-7 | QQ Bot 中继的资质与多租户合规评估（可做成可选功能降风险） | 评估 |
 
 ---
 
@@ -179,8 +178,7 @@ POST /api/billing/verify/apple     # iOS 收据校验
 | 算法备案周期长/不通过 | **极高** | M0 即提交；备案前以"内测"形式；内容安全过滤(敏感词/审核API) |
 | iOS 强制 IAP 抽成30% + 不可用微信支付 | 高 | 充值渠道按端隔离；iOS 价格策略单独定 |
 | 碎片并发超扣/重复发放 | 高 | DB 条件更新 + Redis 锁 + `out_trade_no` 唯一约束 + 流水审计 |
-| 业务组件从 Next.js 迁 Vite 的隐性耦合 | 中 | F-6 预留缓冲；先迁核心(蒸馏/聊天)，中继/记忆次之 |
-| QQ Bot 多租户资质 | 中 | 做成可选模块，主流程不依赖 |
+| 业务组件从 Next.js 迁 Vite 的隐性耦合 | 中 | F-6 预留缓冲；先迁核心(蒸馏/聊天)，记忆次之 |
 | LLM 成本归属（平台垫付 vs 用户自带 Key） | 中 | 初期用户自带 Key（B-9 加密托管）；碎片只计平台增值功能 |
 
 ---

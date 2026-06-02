@@ -40,3 +40,21 @@ release/
 
 # TypeScript build cache
 *.tsbuildinfo
+
+# Capacitor / Android build outputs (keep source, drop generated)
+*/android/.gradle/
+*/android/build/
+*/android/app/build/
+*/android/capacitor-cordova-android-plugins/
+*/android/local.properties
+*/android/.idea/
+*/android/app/src/main/assets/public/
+
+# iOS build outputs
+*/ios/App/Pods/
+*/ios/App/build/
+*/ios/App/App/public/
+
+# Scratch screenshots
+tmp-*.png
+tmp-*.jpg

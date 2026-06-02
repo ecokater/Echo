@@ -5,15 +5,24 @@ import config
 from schemas import ChatRequest
 from deps import get_db, get_optional_user
 from repositories.message_repo import get_chat_history
+from repositories.persona_repo import get_persona
 from services.chat_service import handle_chat_internal
 from services import wallet_service
 from services.wallet_service import InsufficientBalance
 
-router = APIRouter(prefix="/api", tags=["chat"])
+router = APIRouter(prefix="/api", tags=["legacy-chat"], deprecated=True)
+
+
+def _assert_owner_if_authed(db: Session, persona_id: str, user):
+    """Authenticated clients may only access their own personas (tenant isolation).
+    Unauthenticated (legacy) clients pass through unchanged."""
+    if user is not None and not get_persona(db, persona_id, owner_id=user.id):
+        raise HTTPException(status_code=404, detail="Persona not found")
 
 
 @router.get("/chat/{persona_id}")
-def get_chat(persona_id: str, db: Session = Depends(get_db)):
+def get_chat(persona_id: str, db: Session = Depends(get_db), user=Depends(get_optional_user)):
+    _assert_owner_if_authed(db, persona_id, user)
     try:
         return get_chat_history(db, persona_id)
     except Exception as e:
@@ -30,6 +39,7 @@ async def chat_with_persona(
     db: Session = Depends(get_db),
     user=Depends(get_optional_user),
 ):
+    _assert_owner_if_authed(db, persona_id, user)
     # Authenticated clients consume fragments; legacy unauthenticated clients pass through.
     if user is not None:
         try:

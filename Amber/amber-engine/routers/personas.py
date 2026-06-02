@@ -1,51 +1,40 @@
 import json
+import re
 import uuid
 from typing import List
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-import state
-from database import SessionLocal, Persona, PersonaCorpus
+from database import Persona, PersonaCorpus, User
+from deps import get_db, get_current_user
 from schemas import PersonaBase, PersonaCreate, PersonaResponse, RedistillRequest, CommitUpdateRequest, PersonaIdRequest
-from repositories.persona_repo import get_persona, serialize_persona
+from repositories.persona_repo import list_personas, get_persona, serialize_persona
 from repositories.message_repo import clear_history
-from services.janitor_service import add_system_log
 from services.chat_service import call_llm_with_retry
 
-router = APIRouter(prefix="/api", tags=["personas"])
+router = APIRouter(prefix="/api", tags=["legacy-personas"], deprecated=True)
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+def _owned(db: Session, persona_id: str, user: User) -> Persona:
+    """Fetch a persona that must belong to the current user, else 404."""
+    p = get_persona(db, persona_id, owner_id=user.id)
+    if not p:
+        raise HTTPException(status_code=404, detail="Persona not found")
+    return p
 
 
 @router.get("/personas", response_model=List[PersonaResponse])
-def get_personas(db: Session = Depends(get_db)):
-    personas = db.query(Persona).all()
-    result = []
-    for p in personas:
-        d = p.__dict__.copy()
-        d.pop("_sa_instance_state", None)
-        try:
-            d["traits"] = json.loads(p.traits) if p.traits else []
-            d["catchphrases"] = json.loads(p.catchphrases) if p.catchphrases else []
-        except Exception:
-            d["traits"] = []
-            d["catchphrases"] = []
-        result.append(d)
-    return result
+def get_personas(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    return list_personas(db, owner_id=user.id)
 
 
 @router.post("/personas", response_model=PersonaResponse)
-def create_persona(persona: PersonaCreate, db: Session = Depends(get_db)):
+def create_persona(persona: PersonaCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     persona_id = persona.id or str(uuid.uuid4())
     db_p = Persona(
         id=persona_id,
+        user_id=user.id,
         name=persona.name,
         gender=persona.gender,
         relationship_desc=persona.relationship_desc,
@@ -57,19 +46,13 @@ def create_persona(persona: PersonaCreate, db: Session = Depends(get_db)):
         catchphrases=json.dumps(persona.catchphrases, ensure_ascii=False),
         stability=persona.stability,
         synchronization=persona.synchronization,
-        is_override_active=persona.is_override_active,
-        override_interval=persona.override_interval,
-        bot_app_id=persona.bot_app_id,
-        bot_app_secret=persona.bot_app_secret,
-        bot_token=persona.bot_token,
     )
     db.add(db_p)
     db.commit()
 
     if persona.raw_corpus:
-        lines = persona.raw_corpus.split("\n")
         chunks, current = [], ""
-        for line in lines:
+        for line in persona.raw_corpus.split("\n"):
             line = line.strip()
             if not line:
                 continue
@@ -94,35 +77,29 @@ def create_persona(persona: PersonaCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/personas/{persona_id}", response_model=PersonaResponse)
-def update_persona(persona_id: str, data: PersonaBase, db: Session = Depends(get_db)):
-    p = db.query(Persona).filter(Persona.id == persona_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Persona not found")
+def update_persona(persona_id: str, data: PersonaBase, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    p = _owned(db, persona_id, user)
     for field in ("name", "gender", "relationship_desc", "impression", "avatar", "token", "core_memory",
-                  "stability", "synchronization", "is_override_active", "override_interval",
-                  "bot_app_id", "bot_app_secret", "bot_token"):
+                  "stability", "synchronization"):
         setattr(p, field, getattr(data, field))
-    p.traits = json.dumps(data.traits)
-    p.catchphrases = json.dumps(data.catchphrases)
+    p.traits = json.dumps(data.traits, ensure_ascii=False)
+    p.catchphrases = json.dumps(data.catchphrases, ensure_ascii=False)
     db.commit()
     db.refresh(p)
     return serialize_persona(p)
 
 
 @router.delete("/personas/{persona_id}")
-async def delete_persona(persona_id: str, db: Session = Depends(get_db)):
-    p = db.query(Persona).filter(Persona.id == persona_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Persona not found")
-    if state.qq_relay:
-        await state.qq_relay.stop(persona_id)
+async def delete_persona(persona_id: str, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    p = _owned(db, persona_id, user)
     db.delete(p)
     db.commit()
     return {"message": "Deleted successfully"}
 
 
 @router.post("/persona/clear-history")
-async def clear_chat_history(req: PersonaIdRequest, db: Session = Depends(get_db)):
+async def clear_chat_history(req: PersonaIdRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    _owned(db, req.persona_id, user)
     try:
         msgs, corpus = clear_history(db, req.persona_id)
         return {"status": "success", "deleted_messages": msgs, "deleted_memory": corpus}
@@ -132,9 +109,8 @@ async def clear_chat_history(req: PersonaIdRequest, db: Session = Depends(get_db
 
 
 @router.post("/persona/redistill")
-async def redistill_persona(req: RedistillRequest, db: Session = Depends(get_db)):
-    import re
-    p = db.query(Persona).filter(Persona.id == req.persona_id).first()
+async def redistill_persona(req: RedistillRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    p = get_persona(db, req.persona_id, owner_id=user.id)
     current_traits = ""
     if p and p.traits:
         try:
@@ -184,10 +160,8 @@ async def redistill_persona(req: RedistillRequest, db: Session = Depends(get_db)
 
 
 @router.post("/persona/commit-update")
-def commit_persona_update(req: CommitUpdateRequest, db: Session = Depends(get_db)):
-    p = db.query(Persona).filter(Persona.id == req.persona_id).first()
-    if not p:
-        raise HTTPException(status_code=404, detail="Persona not found")
+def commit_persona_update(req: CommitUpdateRequest, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    p = _owned(db, req.persona_id, user)
     p.name = req.name
     if req.avatar is not None:
         p.avatar = req.avatar

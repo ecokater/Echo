@@ -19,10 +19,9 @@ except ImportError:
 
 import state
 from database import SessionLocal, Base, engine, Persona
-from services.relay_service import QQBotRelay
 from services.janitor_service import janitor_loop, add_system_log
-from routers import personas, chat, relay, memory, system, ws as ws_router
-from routers import auth, wallet, billing
+from routers import system, ws as ws_router
+from routers import auth, wallet, billing, inference, explore, admin
 
 # --- App factory ---
 app = FastAPI(title="Amber Engine API", description="数字生命核心引擎")
@@ -36,15 +35,14 @@ app.add_middleware(
 )
 
 # Mount routers
-app.include_router(personas.router)
-app.include_router(chat.router)
-app.include_router(relay.router)
-app.include_router(memory.router)
 app.include_router(system.router)
 app.include_router(ws_router.router)
 app.include_router(auth.router)
 app.include_router(wallet.router)
 app.include_router(billing.router)
+app.include_router(inference.router)
+app.include_router(explore.router)
+app.include_router(admin.router)
 
 
 @contextmanager
@@ -58,19 +56,10 @@ def get_db_context():
 
 @app.on_event("startup")
 async def startup_event():
-    # Init global relay singleton (avoids circular import at module level)
-    state.qq_relay = QQBotRelay()
-
     # Schema migrations
     with get_db_context() as db:
         migrations = [
-            ("personas", "is_override_active", "BOOLEAN DEFAULT 0"),
-            ("personas", "override_interval", "INTEGER DEFAULT 180"),
             ("personas", "last_interaction_time", "DATETIME"),
-            ("personas", "last_relay_context", "TEXT"),
-            ("personas", "bot_app_id", "TEXT"),
-            ("personas", "bot_app_secret", "TEXT"),
-            ("personas", "bot_token", "TEXT"),
             ("personas", "last_incubation_time", "DATETIME"),
             ("personas", "intimacy", "FLOAT DEFAULT 50.0"),
             ("personas", "activity", "FLOAT DEFAULT 50.0"),
@@ -82,6 +71,7 @@ async def startup_event():
             ("messages", "is_pinned", "BOOLEAN DEFAULT 0"),
             ("persona_corpus", "weight", "FLOAT DEFAULT 1.0"),
             ("persona_corpus", "is_pinned", "BOOLEAN DEFAULT 0"),
+            ("users", "role", "VARCHAR DEFAULT 'user'"),
         ]
         for table, column, col_type in migrations:
             try:

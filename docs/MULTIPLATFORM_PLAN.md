@@ -37,7 +37,6 @@
                       │  │  routers/ services/ repositories│   │
                       │  │  JWT 鉴权 · 多租户 user_id 隔离 │   │
                       │  │  Janitor asyncio 常驻           │   │
-                      │  │  QQBotRelay (botpy)             │   │
                       │  └──────────┬──────────────────────┘   │
                       │   PostgreSQL│  Redis(会话/限流) 可选    │
                       │   对象存储  │  (头像/语料文件)          │
@@ -85,7 +84,6 @@
 | B-5 | WebSocket 鉴权：握手时校验 JWT，`ws/{persona_id}` 校验 persona 归属 | `routers/ws.py` `ws_manager.py` | 1d |
 | B-6 | 限流 + CORS 白名单（生产域名）；移除 `allow_origins=["*"]` | `main.py` | 0.5d |
 | B-7 | 对象存储：头像/语料从 base64 入库改为上传 S3，DB 存 URL | `routers/personas.py` | 1.5d |
-| B-8 | QQBotRelay 多租户：凭证按 user 隔离，进程级去重池改 user 维度 | `services/relay_service.py` | 1d |
 
 ### WP-F 前端共享层改造
 
@@ -114,7 +112,7 @@
 |------|------|------|
 | M-1 | `npm i @capacitor/core @capacitor/cli`，`npx cap init`，配置 `webDir: out` | 0.5d |
 | M-2 | `npx cap add android` / `npx cap add ios`，首次构建跑通 WebView 加载现有产物 | 1d |
-| M-3 | 推送通知（主动越界消息）：Capacitor Push + FCM(Android) / APNs(iOS)，后端加推送下发 | 3d |
+| M-3 | 系统推送通知：Capacitor Push + FCM(Android) / APNs(iOS)，后端加推送下发 | 3d |
 | M-4 | 安全存储 JWT：`@capacitor/preferences` + Keychain/Keystore | 0.5d |
 | M-5 | 深链 / 状态栏 / 启动屏 / 应用图标 多分辨率适配 | 1d |
 | M-6 | iOS `WKWebView` 的 WSS 与混合内容策略（必须 HTTPS/WSS，无明文） | 0.5d |
@@ -138,7 +136,7 @@
 | C-3 | App Store：开发者账号($99/yr)、App 隐私清单(PrivacyInfo)、内容分级、审核 | 1-3 周 |
 | C-4 | Google Play：开发者账号($25)、数据安全表单、目标 API 等级、审核 | 3-7 天 |
 | C-5 | Microsoft Store：MSIX 打包或外链分发 | 3-5 天 |
-| C-6 | **国内合规（如面向中国）**：App 备案、ICP、算法备案（含 LLM 生成内容）、QQ Bot 资质 | 数周，强阻塞 |
+| C-6 | **国内合规（如面向中国）**：App 备案、ICP、算法备案（含 LLM 生成内容） | 数周，强阻塞 |
 
 ---
 
@@ -150,7 +148,7 @@
 | **M1 前端接入云端** | 登录态、API 切云、平台适配，桌面端连云跑通 | F-1~F-4, D-4 | ~1.5 周 |
 | **M2 桌面发布** | Win+Mac 签名打包、自动更新、Microsoft Store | D-1~D-5, C-5 | ~1.5 周 |
 | **M3 移动端 MVP** | Capacitor 双端跑通、响应式、安全存储 | M-1~M-2, M-4~M-6, F-5~F-6 | ~2 周 |
-| **M4 移动端完整** | 推送通知、对象存储、QQ 多租户 | M-3, B-7, B-8 | ~2 周 |
+| **M4 移动端完整** | 推送通知、对象存储 | M-3, B-7 | ~2 周 |
 | **M5 上架** | 隐私合规、账号删除、商店审核 | C-1~C-6, I-4~I-5 | ~3-6 周（审核不可控） |
 
 **总工程量约 9-11 周（不含商店审核与国内备案等待）。**
@@ -163,7 +161,6 @@
 |------|------|------|------|
 | iOS 审核拒绝 LLM 生成内容（4.3/5.x 条款） | 高 | 上架阻塞 | 内容过滤、年龄分级、明确第三方 AI 声明 |
 | 国内算法备案 / ICP 周期长 | 高 | 国内发布阻塞 | 提前启动；或先海外发布 |
-| QQ Bot 在多租户云端的资质与频控 | 中 | 中继功能受限 | 评估官方政策；做成可选功能 |
 | LLM Key 服务端托管的安全与成本归属 | 中 | 安全/计费 | 用户自带 Key 加密存储；或平台计费抽象层 |
 | WebSocket 在移动端后台被系统挂起 | 中 | 实时消息丢失 | 推送通知兜底；前台重连补拉 |
 | 单机 PostgreSQL 成为瓶颈 | 低 | 扩容 | 连接池调优；预留读写分离接口 |

@@ -6,8 +6,7 @@
   <a href="ReadmeJapanese.md">日本語</a> | 
   <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
   <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a> | 
-  <a href="QQBOT_GUIDE.md">QQ机器人指南 (QQBot)</a>
+  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
 </p>
 
 欢迎来到数字生命的世界！这份指南将帮助您在 3 分钟内完成系统部署并开始与您的第一个数字人格互动。
@@ -54,15 +53,13 @@ npm run dev
 
 ---
 
-## 🌐 第三步：跨端交互 (QQ 同步)
+## 🌐 第三步：多端使用
 
 想要在手机上也能和她聊天？
 
-1. 在侧边栏选中分身，点击右上角 **“Bot 配置”**。
-2. 在 **“外部中继”** 中填入您的 QQ 机器人 AppID。
-3. 点击 **“连接测试”**。
-4. **激活主动性**：开启“主动越界反向弹窗”，设置间隔为 1 分钟。
-5. **强制觉醒**：在左下角设置中开启“测试模式”，她会立刻在 QQ 上找你！
+1. 使用新主前端 `琥珀Amber数字生命UI/` 构建 Android APK。
+2. 确保移动端配置的 `VITE_API_BASE_URL` 指向可访问的后端服务。
+3. 登录同一账号后，即可访问自己的分身、记忆与对话数据。
 
 ---
 

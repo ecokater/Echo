@@ -54,14 +54,7 @@ class Persona(Base):
     proactivity = Column(Float, default=55.0, server_default="55.0")
     memory_depth = Column(Float, default=88.0, server_default="88.0")
 
-    # Proactive override / relay
-    is_override_active = Column(Boolean, default=False, server_default="0")
-    override_interval = Column(Integer, default=180, server_default="180")
     last_interaction_time = Column(DateTime, default=datetime.utcnow)
-    last_relay_context = Column(Text, nullable=True)
-    bot_app_id = Column(String, nullable=True)
-    bot_app_secret = Column(String, nullable=True)
-    bot_token = Column(String, nullable=True)
     last_incubation_time = Column(DateTime, default=datetime.utcnow)
 
     messages = relationship("Message", back_populates="persona", cascade="all, delete-orphan")
@@ -109,6 +102,7 @@ class User(Base):
     password_hash = Column(String, nullable=False)
     nickname = Column(String, nullable=True)
     avatar_url = Column(Text, nullable=True)
+    role = Column(String, default="user", server_default="user", nullable=False)  # user|admin
     status = Column(String, default="active", server_default="active")  # active|banned|deleted
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -162,14 +156,73 @@ class SkuCatalog(Base):
     active = Column(Boolean, default=True, server_default="1")
 
 
+# ───────────────────────── Audit events ─────────────────
+
+class UsageEvent(Base):
+    __tablename__ = "usage_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    event_type = Column(String, nullable=False, index=True)  # inference_chat|inference_distill|memory_summary
+    endpoint = Column(String, nullable=False)
+    provider = Column(String, nullable=True)
+    model_id = Column(String, nullable=True)
+    status = Column(String, nullable=False, index=True)  # success|client_error|provider_error|insufficient_balance
+    cost_fragments = Column(BigInteger, default=0, server_default="0", nullable=False)
+    refunded_fragments = Column(BigInteger, default=0, server_default="0", nullable=False)
+    prompt_tokens = Column(Integer, default=0, server_default="0", nullable=False)
+    completion_tokens = Column(Integer, default=0, server_default="0", nullable=False)
+    latency_ms = Column(Integer, default=0, server_default="0", nullable=False)
+    error_code = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+class SystemEvent(Base):
+    __tablename__ = "system_events"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), index=True, nullable=True)
+    level = Column(String, default="info", server_default="info", nullable=False)
+    source = Column(String, nullable=False, index=True)
+    event_type = Column(String, nullable=False, index=True)
+    message = Column(String, nullable=False)
+    metadata_json = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+
+# ───────────────────────── Explore: shared persona templates ─────────────────
+# Opt-in cloud sharing. Stores ONLY the publishable persona "card" (traits/core
+# memory/avatar) — never chat full-text or private memory corpus, which stay
+# local on the owner's device per the Local-first architecture.
+
+class SharedPersona(Base):
+    __tablename__ = "shared_personas"
+
+    id = Column(String, primary_key=True, default=_uuid, index=True)
+    owner_id = Column(String, ForeignKey("users.id"), index=True, nullable=False)
+    owner_nickname = Column(String, nullable=True)  # denormalized snapshot for listing
+
+    name = Column(String, nullable=False)
+    gender = Column(String, nullable=True)
+    relationship_desc = Column(String, nullable=True)
+    impression = Column(Text, nullable=True)
+    avatar = Column(Text, nullable=True)
+    core_memory = Column(Text, nullable=True)
+    traits = Column(Text, nullable=True)
+    catchphrases = Column(Text, nullable=True)
+    tags = Column(Text, nullable=True)  # comma-separated, optional
+
+    install_count = Column(Integer, default=0, server_default="0", nullable=False)
+    like_count = Column(Integer, default=0, server_default="0", nullable=False)
+    status = Column(String, default="public", server_default="public", nullable=False)  # public|removed
+
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ───────────────────────── Legacy hard-reset guards (dev only) ─────────────────
 
 inspector = inspect(engine)
-if inspector.has_table("personas"):
-    columns = [col["name"] for col in inspector.get_columns("personas")]
-    if "is_override_active" not in columns:
-        print("⚠️ 旧库缺 'is_override_active'，执行刷洗...")
-        Base.metadata.drop_all(bind=engine)
 if inspector.has_table("messages"):
     columns = [col["name"] for col in inspector.get_columns("messages")]
     if "weight" not in columns:

@@ -13,8 +13,7 @@
   <br>
   <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
   <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a> | 
-  <a href="QQBOT_GUIDE.md">QQ机器人指南 (QQBot)</a>
+  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
 </p>
 
 ## 💬 Foreword
@@ -36,7 +35,7 @@ Unlike traditional general-purpose chatbots, Amber aims to physically simulate h
 The project addresses anthropomorphic experiences across three core dimensions:
 1. **The "Skeleton" of Personality**: Through a three-axis personality matrix, ensuring the persona maintains consistent behavioral logic in any conversation, rather than random AI replies.
 2. **The "Precipitation" of Memory**: Simulating the human sleep mechanism, daily trivial conversations are automatically "dehydrated and distilled" into long-term memory imprints, achieving a true "the more we chat, the more I understand you" experience.
-3. **The "Entity" of Survival**: Breaking sandbox limitations, through external relays (such as QQ bots), allowing the persona to spontaneously "cross boundaries" into the user's real life, achieving proactive check-ins and reverse care.
+3. **The "Entity" of Survival**: Keeping one persona, memory, and emotional state available across web, desktop, and mobile clients.
 
 ## 🖼️ Project Screenshots
 
@@ -62,20 +61,13 @@ The project addresses anthropomorphic experiences across three core dimensions:
   <em>[Fig 3] Consciousness Remolding (Distillation): The whole process of refinement from relationship definition, subjective impression, memory materials to personality trait preview and emotional benchmark fine-tuning</em>
 </p>
 
-<p align="center">
-  <img src="image/relay_config.png" alt="QQ Relay" width="800px" />
-  <br>
-  <em>[Fig 4] Physical Relay Configuration: Activating active cross-border proactive check-in and neglect fermentation mechanism</em>
-</p>
-
 ## 🧠 Architecture
 
 - **⚡ System 1 (Instant Behavioral State Machine)**: Native implementation of Anger, Humor, and Empathy three-axis personality control matrix, making the persona's text replies have behavioral mapping in their bones.
 - **🧠 System 2 (Cerebral Cortex Long-term Memory Chain)**: Uses SQLite high-frequency field physical index optimization, providing 0.4ms extreme response and 1000-word RAG dynamic fusion interception mechanism, allowing the chat to automatically retrieve core memories.
 - **🧹 Janitor (Unconscious Life Metabolism)**: Resident Asyncio background daemon. Spontaneously performs instantaneous emotional linear annealing in silence to ensure personality stability.
 - **⏳ Memory Incubation (Dream Memory Crystallization)**: Automatically triggers fault scanning. Uses LLM to denoise and distill original chat streams into System 2 imprints.
-- **📡 External Survival (External Relay Entity)**: Completely breaks browser sandbox limits. Physically powers Tencent QQ bots for 100% pixel-level synchronization between web console and mobile QQ.
-- **🔔 Active Override (Active Proactive Check-in)**: Introduces a neglect time-lapse fermentation algorithm. When enabled, shakes a 3% random fate dice every 60 seconds to trigger proactive check-ins on the host's mobile QQ.
+- **📡 Multi-Client Survival**: Carries the same persona, memory, and emotional state across web, desktop, and mobile clients.
 
 ## 🍉 Core Roadmap
 
@@ -83,11 +75,8 @@ The project addresses anthropomorphic experiences across three core dimensions:
 - ✅ Cerebral cortex RAG memory chain (SQLite optimization + 1000-word truncation)
 - ✅ Janitor background 60s emotional annealing daemon
 - ✅ Midnight dream memory crystallization (AI automatic dehydration and summary)
-- ✅ Tencent QQ bot relay connection (100% sync between mobile and web)
 - ✅ i18n support: Multi-language (CN/EN/JP) physical switching
-- ✅ Local config: One-click active proactive check-in (check-in and reverse care)
-- ✅ Local config: Neglect fermentation interval selection (1min/3h/12h)
-- ⏳ Telegram / Discord multi-protocol survival expansion (WIP)
+- ✅ Multi-platform engineering: Web / Electron / Android Capacitor build flow
 - ⏳ Canvas visualization of cerebral cortex memory nodes (Planned)
 
 ## 🚀 Quick Start
@@ -124,7 +113,7 @@ npm run dev
 
 ### 3. Environment Configuration
 
-Configure the corresponding API Key and QQ bot credentials in the project root or `amber-engine` directory (can be recorded physically via the frontend settings interface).
+Configure the model API key in the project root or `amber-engine` directory, or enter it through the frontend settings UI.
 
 ---
 

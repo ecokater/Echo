@@ -200,6 +200,18 @@
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 
+  button {
+    touch-action: manipulation;
+  }
+
+  button:not(:disabled) {
+    transition-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  button:not(:disabled):active {
+    transform: scale(0.97);
+  }
+
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
   }
@@ -251,6 +263,9 @@
   }
   .text-fragment { color: var(--fragment); }
   .animate-fragment-pulse { animation: fragment-pulse 2.4s ease-in-out infinite; }
+  .ios-spring-surface {
+    will-change: opacity, transform;
+  }
   @keyframes fragment-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.72; }

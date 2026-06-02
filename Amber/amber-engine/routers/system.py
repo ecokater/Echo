@@ -6,7 +6,10 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 import state
-from database import SessionLocal, Persona, Message, PersonaCorpus
+from database import SessionLocal, Persona, Message, PersonaCorpus, User
+from deps import get_current_user
+from repositories import usage_repo
+from schemas import SystemEventResponse, UsageEventResponse
 from services.janitor_service import add_system_log
 
 router = APIRouter(prefix="/api", tags=["system"])
@@ -46,6 +49,26 @@ def get_system_status(persona_id: Optional[str] = None, db: Session = Depends(ge
     return response
 
 
+@router.get("/system/usage-events", response_model=list[UsageEventResponse])
+def get_usage_events(
+    limit: int = 50,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    rows = usage_repo.list_usage_events(db, user_id=user.id, limit=limit)
+    return [usage_repo.serialize_usage_event(row) for row in rows]
+
+
+@router.get("/system/events", response_model=list[SystemEventResponse])
+def get_system_events(
+    limit: int = 50,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    rows = usage_repo.list_system_events(db, user_id=user.id, limit=limit)
+    return [usage_repo.serialize_system_event(row) for row in rows]
+
+
 @router.post("/system/janitor-test-mode")
 def toggle_janitor_test_mode(enabled: bool):
     state.system_stats["janitor_test_mode"] = enabled
@@ -70,9 +93,6 @@ def update_system_config(config: dict):
 
 @router.post("/system/reset")
 async def global_system_reset(db: Session = Depends(get_db)):
-    if state.qq_relay:
-        for rid in list(state.qq_relay.relays.keys()):
-            await state.qq_relay.stop(rid)
     db.query(Message).delete()
     db.query(PersonaCorpus).delete()
     db.query(Persona).delete()

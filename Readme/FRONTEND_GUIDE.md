@@ -6,8 +6,7 @@
   <a href="ReadmeJapanese.md">日本語</a> | 
   <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
   <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a> | 
-  <a href="QQBOT_GUIDE.md">QQ机器人指南 (QQBot)</a>
+  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
 </p>
 
 Amber UI 是本系统的交互层，基于 Next.js 14 构建，提供了沉浸式的数字生命管理体验。

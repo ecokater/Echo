@@ -6,8 +6,11 @@ from sqlalchemy.orm import Session
 from database import Persona
 
 
-def list_personas(db: Session) -> List[dict]:
-    personas = db.query(Persona).all()
+def list_personas(db: Session, owner_id: Optional[str] = None) -> List[dict]:
+    q = db.query(Persona)
+    if owner_id is not None:
+        q = q.filter(Persona.user_id == owner_id)
+    personas = q.all()
     result = []
     for p in personas:
         d = p.__dict__.copy()
@@ -22,8 +25,11 @@ def list_personas(db: Session) -> List[dict]:
     return result
 
 
-def get_persona(db: Session, persona_id: str) -> Optional[Persona]:
-    return db.query(Persona).filter(Persona.id == persona_id).first()
+def get_persona(db: Session, persona_id: str, owner_id: Optional[str] = None) -> Optional[Persona]:
+    q = db.query(Persona).filter(Persona.id == persona_id)
+    if owner_id is not None:
+        q = q.filter(Persona.user_id == owner_id)
+    return q.first()
 
 
 def create_persona(db: Session, **kwargs) -> Persona:

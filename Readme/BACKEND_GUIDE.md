@@ -6,11 +6,10 @@
   <a href="ReadmeJapanese.md">日本語</a> | 
   <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
   <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a> | 
-  <a href="QQBOT_GUIDE.md">QQ机器人指南 (QQBot)</a>
+  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
 </p>
 
-Amber Engine 是本项目的认知核心，基于 FastAPI 构建，负责情感计算、RAG 记忆检索及外部中继控制。
+Amber Engine 是本项目的认知核心，基于 FastAPI 构建，负责情感计算、RAG 记忆检索、多用户鉴权与账务服务。
 
 ## ⚙️ 环境要求
 - **Python**: 3.10 或更高版本
@@ -52,7 +51,6 @@ python main.py
 - `main.py`: 核心 API 路由与 Janitor 守护进程逻辑。
 - `database.py`: SQLAlchemy ORM 模型定义。
 - `ingest_corpus.py`: 用于批量导入原始语料的工具脚本。
-- `botpy.log`: QQ Bot 的运行日志，用于排查连接故障。
 
 ## ⚠️ 注意事项
 - **API Key**: 本项目默认不包含 OpenAI API Key。启动后，请在前端的“全局 API 配置”中填入您自己的 Key，否则人格对话将无法生效。

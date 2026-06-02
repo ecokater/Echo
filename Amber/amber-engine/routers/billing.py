@@ -96,6 +96,33 @@ def create_order(req: OrderRequest, user: User = Depends(get_current_user), db: 
             "amount_cny": order.amount_cny, "fragments": order.fragments, "pay": pay_params}
 
 
+@router.get("/orders")
+def list_orders(limit: int = 50, user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    limit = max(1, min(100, limit))
+    rows = (
+        db.query(Order)
+        .filter(Order.user_id == user.id)
+        .order_by(Order.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "order_id": o.id,
+            "out_trade_no": o.out_trade_no,
+            "sku": o.sku,
+            "amount_cny": o.amount_cny,
+            "amount_display": f"¥{o.amount_cny / 100:.2f}",
+            "fragments": int(o.fragments),
+            "channel": o.channel,
+            "status": o.status,
+            "created_at": o.created_at.isoformat() if o.created_at else None,
+            "paid_at": o.paid_at.isoformat() if o.paid_at else None,
+        }
+        for o in rows
+    ]
+
+
 @router.post("/callback/dev")
 def callback_dev(req: DevSettleRequest, db: Session = Depends(get_db)):
     """Dev-only: simulate successful payment to verify the full商业闭环 locally."""

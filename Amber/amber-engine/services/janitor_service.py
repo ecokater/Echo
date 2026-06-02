@@ -1,6 +1,4 @@
 import asyncio
-import json
-import random
 from datetime import datetime, timezone
 
 import state
@@ -34,14 +32,6 @@ async def janitor_loop():
 
         with get_db_context() as db:
             try:
-                # 0. Zombie relay scan
-                active_ids = [p.id for p in db.query(Persona.id).all()]
-                if state.qq_relay:
-                    for rid in list(state.qq_relay.relays.keys()):
-                        if rid not in active_ids:
-                            print(f"【Janitor】发现僵尸中继 {rid}，执行关停...")
-                            await state.qq_relay.stop(rid)
-
                 now = datetime.now(timezone.utc)
                 deleted_count = 0
 
@@ -72,61 +62,7 @@ async def janitor_loop():
                     add_system_log(f"{p.name} 状态自愈 -> H:{p.happiness}% A:{p.anger}% X:{p.anxiety}%")
                     await ws_manager.broadcast(p.id, {"type": "mood", "data": {"happiness": p.happiness, "anger": p.anger, "anxiety": p.anxiety}})
 
-                # 3. Active override (proactive QQ message)
-                for p in personas:
-                    if not p.is_override_active or not state.qq_relay:
-                        continue
-                    is_online = p.id in state.qq_relay.relays and state.qq_relay.relays[p.id].get("is_connected")
-                    if not is_online:
-                        continue
-                    if not p.last_interaction_time:
-                        continue
-                    diff_min = (now - p.last_interaction_time.replace(tzinfo=timezone.utc)).total_seconds() / 60.0
-                    if diff_min < p.override_interval:
-                        continue
-
-                    add_system_log(f"【意识觉醒】分身 {p.name} 达到冷落阈值，进行觉醒掷骰...")
-                    is_test = state.system_stats.get("janitor_test_mode", False)
-                    if not (is_test or random.random() < 0.10):
-                        add_system_log(f"【意识觉醒】🎲 掷骰未摇中，{p.name} 继续沉睡。")
-                        continue
-
-                    relay_info = state.qq_relay.relays[p.id]
-                    api_cfg = relay_info.get("api_config", {})
-                    from schemas import ChatRequest
-                    chat_req = ChatRequest(
-                        content="（[系统底层指令]：你已经很久没和宿主说话了。请从你的脑皮层碎片中挑选一个细节，给宿主发一条符合性格的消息。字数40字以内。严禁套路化模板。）",
-                        api_key=api_cfg.get("api_key"),
-                        base_url=api_cfg.get("base_url"),
-                        model_id=api_cfg.get("model_id"),
-                    )
-                    try:
-                        from services.chat_service import handle_chat_internal
-                        response = await handle_chat_internal(p.id, chat_req, db, is_automated=True)
-                        ai_reply = response["message"]["content"]
-                        client_obj = relay_info["client"]
-                        ctx = getattr(client_obj, "last_msg_context", None)
-                        if not ctx and p.last_relay_context:
-                            try:
-                                ctx = json.loads(p.last_relay_context)
-                            except Exception:
-                                ctx = None
-                        if ctx:
-                            msg_seq = random.randint(1000, 999999)
-                            suffix = "​"
-                            if ctx["type"] == "direct":
-                                await client_obj.api.post_dms_messages(guild_id=ctx["guild_id"], content=ai_reply + suffix, msg_seq=msg_seq)
-                            elif ctx["type"] == "group":
-                                await client_obj.api.post_group_message(group_openid=ctx["group_openid"], msg_type=0, content=ai_reply + suffix, msg_id=ctx["msg_id"], msg_seq=msg_seq)
-                            elif ctx["type"] == "c2c":
-                                openid = ctx.get("openid")
-                                if openid:
-                                    await client_obj.api.post_c2c_message(openid=openid, msg_type=0, content=ai_reply + suffix, msg_id=ctx["msg_id"], msg_seq=msg_seq)
-                            add_system_log(f"【意识觉醒】{p.name} 主动查岗已下发至 QQ。")
-                    except Exception as e:
-                        add_system_log(f"【意识觉醒】物理故障: {e}")
-
-                # 4. Memory incubation (dream crystallization)
+                # 3. Memory incubation (dream crystallization)
                 for p in db.query(Persona).all():
                     if not p.last_incubation_time:
                         p.last_incubation_time = datetime.now(timezone.utc)
@@ -149,12 +85,9 @@ async def janitor_loop():
                         db.commit()
                         continue
 
-                    api_cfg = {}
-                    if state.qq_relay and p.id in state.qq_relay.relays:
-                        api_cfg = state.qq_relay.relays[p.id].get("api_config", {})
-                    llm_key = api_cfg.get("api_key") or state.system_stats.get("global_api_key")
-                    llm_url = api_cfg.get("base_url") or state.system_stats.get("global_base_url") or "https://api.openai.com/v1"
-                    llm_model = api_cfg.get("model_id") or state.system_stats.get("global_model_id") or "gpt-4o-mini"
+                    llm_key = state.system_stats.get("global_api_key")
+                    llm_url = state.system_stats.get("global_base_url") or "https://api.openai.com/v1"
+                    llm_model = state.system_stats.get("global_model_id") or "gpt-4o-mini"
 
                     if not llm_key:
                         add_system_log(f"【睡梦扫描】{p.name} 缺失 API KEY，跳过结晶。")

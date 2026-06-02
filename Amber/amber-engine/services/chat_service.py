@@ -36,7 +36,6 @@ async def handle_chat_internal(
     req: ChatRequest,
     db: Session,
     is_automated: bool = False,
-    skip_relay: bool = False,
 ) -> dict:
     t0 = time.perf_counter()
     sys.stdout.write("\n>>> [PROFILING START] <<<\n")
@@ -217,42 +216,6 @@ async def handle_chat_internal(
     # 7. WebSocket push
     await ws_manager.broadcast(persona_id, {"type": "message", "data": msg_data})
     await ws_manager.broadcast(persona_id, {"type": "mood", "data": mood_payload})
-
-    # 8. QQ relay broadcast
-    if not is_automated and not skip_relay and state.qq_relay:
-        _relay = state.qq_relay
-        is_relay_online = persona_id in _relay.relays and _relay.relays[persona_id].get("is_connected")
-        if is_relay_online:
-            relay_info = _relay.relays[persona_id]
-            client_obj = relay_info["client"]
-            ctx = getattr(client_obj, "last_msg_context", None)
-            if not ctx and persona.last_relay_context:
-                try:
-                    ctx = json.loads(persona.last_relay_context)
-                except Exception:
-                    ctx = None
-            if ctx:
-                try:
-                    ctx_time_str = ctx.get("timestamp")
-                    if ctx_time_str:
-                        ctx_time = datetime.fromisoformat(ctx_time_str)
-                        if (datetime.now(timezone.utc) - ctx_time).total_seconds() > 300:
-                            _log(f"【认知穿透】分身 {persona.name} QQ 回复窗口已超时。")
-                            return _result(msg_data, user_msg, mood_payload)
-                    import random
-                    msg_seq = random.randint(1000, 999999)
-                    unique_suffix = "​"
-                    if ctx["type"] == "direct":
-                        await client_obj.api.post_dms_messages(guild_id=ctx["guild_id"], content=ai_content + unique_suffix, msg_id=ctx["msg_id"], msg_seq=msg_seq)
-                    elif ctx["type"] == "group":
-                        await client_obj.api.post_group_message(group_openid=ctx["group_openid"], msg_type=0, content=ai_content + unique_suffix, msg_id=ctx["msg_id"], msg_seq=msg_seq)
-                    elif ctx["type"] == "c2c":
-                        openid = ctx.get("openid") or getattr(client_obj, "last_msg_context", {}).get("openid")
-                        if openid:
-                            await client_obj.api.post_c2c_message(openid=openid, msg_type=0, content=ai_content + unique_suffix, msg_id=ctx["msg_id"], msg_seq=msg_seq)
-                    _log(f"【认知穿透】分身 {persona.name} 回复已下发至 QQ (Seq: {msg_seq})。")
-                except Exception as e:
-                    _log(f"【认知穿透】物理下发失败: {e}")
 
     latency_ms = int((time.perf_counter() - t0) * 1000)
     state.system_stats["last_latency_ms"] = latency_ms
