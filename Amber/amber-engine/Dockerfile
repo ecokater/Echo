@@ -14,6 +14,12 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
+# PyPI 索引：默认走清华镜像（国内服务器快且不被墙）。
+# 海外部署可覆盖： docker build --build-arg PIP_INDEX_URL=https://pypi.org/simple
+ARG PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple
+ENV PIP_INDEX_URL=${PIP_INDEX_URL} \
+    PIP_TRUSTED_HOST=pypi.tuna.tsinghua.edu.cn
+
 # 先拷依赖清单，利用层缓存
 COPY requirements.txt .
 RUN pip install --upgrade pip && pip install -r requirements.txt
