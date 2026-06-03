@@ -32,3 +32,10 @@ COST_PER_CHAT = int(os.getenv("COST_PER_CHAT", "1"))
 COST_PER_DISTILL = int(os.getenv("COST_PER_DISTILL", "20"))
 COST_PER_SNAPSHOT = int(os.getenv("COST_PER_SNAPSHOT", "5"))
 LOW_BALANCE_THRESHOLD = int(os.getenv("LOW_BALANCE_THRESHOLD", "10"))
+
+# 平台模型（主版本：服务端持有 key，客户端不带 key 时使用）
+# 默认硅基流动 + DeepSeek。这些只用于首次播种 platform_config，运行后以数据库为准
+# （管理员可在后台实时修改型号与单价）。
+PLATFORM_API_KEY = os.getenv("PLATFORM_API_KEY", "")
+PLATFORM_BASE_URL = os.getenv("PLATFORM_BASE_URL", "https://api.siliconflow.cn/v1")
+PLATFORM_MODEL_ID = os.getenv("PLATFORM_MODEL_ID", "Pro/deepseek-ai/DeepSeek-V3")

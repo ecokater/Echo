@@ -113,6 +113,14 @@ async def startup_event():
         except Exception as e:
             print(f"【SKU seed 失败】: {e}")
 
+    # Seed platform model config singleton (SiliconFlow + pricing) from env defaults
+    with get_db_context() as db:
+        try:
+            from repositories import platform_repo
+            platform_repo.get_config(db)
+        except Exception as e:
+            print(f"【平台配置 seed 失败】: {e}")
+
     # Migrate user_id columns onto legacy tables
     with get_db_context() as db:
         for table in ("personas", "messages", "persona_corpus"):

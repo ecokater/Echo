@@ -243,3 +243,28 @@ class SharedPersonaDetail(SharedPersonaCard):
     core_memory: Optional[str] = None
     traits: Optional[str] = None
     catchphrases: Optional[str] = None
+
+
+# ───────────────────────── Platform model config + live pricing (admin) ─────────
+
+class PlatformConfigResponse(BaseModel):
+    provider_base_url: str
+    provider_model_id: str
+    api_key_masked: str = ""
+    api_key_set: bool = False
+    platform_enabled: bool = True
+    cost_per_chat: int
+    cost_per_distill: int
+    cost_per_snapshot: int
+    updated_at: Optional[str] = None
+
+
+class PlatformConfigUpdate(BaseModel):
+    """All fields optional — only provided ones are updated. Empty api_key = no change."""
+    provider_base_url: Optional[str] = None
+    provider_model_id: Optional[str] = None
+    provider_api_key: Optional[str] = None
+    platform_enabled: Optional[bool] = None
+    cost_per_chat: Optional[int] = None
+    cost_per_distill: Optional[int] = None
+    cost_per_snapshot: Optional[int] = None

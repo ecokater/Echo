@@ -220,6 +220,31 @@ class SharedPersona(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 
+# ───────────────────────── Platform model config + live pricing ─────────────────
+# Singleton row (id=1). Holds the server-side provider credentials (e.g.
+# SiliconFlow) used when a client does NOT bring its own key, plus admin-tunable
+# fragment pricing. The api_key is a server secret — never returned unmasked.
+
+class PlatformConfig(Base):
+    __tablename__ = "platform_config"
+
+    id = Column(Integer, primary_key=True, default=1)
+    provider_base_url = Column(String, default="https://api.siliconflow.cn/v1",
+                               server_default="https://api.siliconflow.cn/v1", nullable=False)
+    provider_model_id = Column(String, default="Pro/deepseek-ai/DeepSeek-V3",
+                               server_default="Pro/deepseek-ai/DeepSeek-V3", nullable=False)
+    provider_api_key = Column(Text, nullable=True)
+    # When true, requests without a client key fall back to the platform provider.
+    platform_enabled = Column(Boolean, default=True, server_default="1", nullable=False)
+
+    # Live fragment pricing (admin-editable, overrides config.py defaults)
+    cost_per_chat = Column(Integer, default=1, server_default="1", nullable=False)
+    cost_per_distill = Column(Integer, default=20, server_default="20", nullable=False)
+    cost_per_snapshot = Column(Integer, default=5, server_default="5", nullable=False)
+
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
 # ───────────────────────── Legacy hard-reset guards (dev only) ─────────────────
 
 inspector = inspect(engine)

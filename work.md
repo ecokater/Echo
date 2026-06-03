@@ -45,7 +45,8 @@ base: `http://127.0.0.1:8000`（生产改云端域名）
 | local-only | persona / chat / memory 数据已迁移到客户端本地 IndexedDB；旧云端 API 已从主 FastAPI app 取消挂载 |
 | system | `GET /api/health`、`/api/system/status|config|reset|janitor-test-mode`、`GET /api/system/usage-events|events` |
 | explore | ✅ `POST /api/explore/publish`、`GET /api/explore/list?q&sort=hot|new&limit&offset`、`GET /api/explore/mine`、`GET /api/explore/{id}`、`POST /api/explore/{id}/install`、`DELETE /api/explore/{id}`（云端仅存可分享人格卡，不存聊天/私有记忆；已实现 by Claude 2026-06-02） |
-| admin | ✅ `GET /api/admin/overview|usage|ledger|orders|shares|system`、`POST /api/admin/shares/{id}/remove`、`GET /api/admin/dashboard`(HTML 看板)；守卫 `get_current_admin`（role==admin 或 `ADMIN_PHONES` 白名单自动提权）（已实现 by Claude 2026-06-02） |
+| admin | ✅ `GET /api/admin/overview|usage|ledger|orders|shares|system`、`POST /api/admin/shares/{id}/remove`、`GET/POST /api/admin/pricing`(平台模型+实时单价)、`GET /api/admin/dashboard`(HTML 看板)；守卫 `get_current_admin`（role==admin 或 `ADMIN_PHONES` 白名单自动提权）（已实现 by Claude 2026-06-02/03） |
+| inference(平台) | ✅ 推理三端点支持平台模型回退：客户端带 key→用客户端(保留旧版自设 API)；不带→用 `platform_config`(硅基流动+DeepSeek)；单价取 DB 实时值（REQ-012 by Claude 2026-06-03） |
 
 鉴权：`get_current_user`(强制) / `get_optional_user`(兼容旧客户端)。碎片：注册赠 100，对话扣 1，余额不足返回 **402**。
 
@@ -90,6 +91,26 @@ base: `http://127.0.0.1:8000`（生产改云端域名）
 ---
 
 ## 日志
+
+### 2026-06-03 · Claude · REQ-012 后端：硅基流动平台模型 + 管理员实时定价（P0）
+**完成**
+- 认领 REQ-012 后端部分（前端「去 API 设置界面」留 Codex,已在 working.md 标可领）。
+- `database.py::PlatformConfig` 单例表(id=1):`provider_base_url/model_id/api_key`、`platform_enabled`、`cost_per_chat/distill/snapshot`、`updated_at`。新表 create_all 自动建。
+- `repositories/platform_repo.py`:`get_config`(缺失则从 config/env 播种)、`update_config`(只更非 None;空 api_key 视为不改,防误清)、`serialize`(api_key 永远掩码 `sk-xxxx****xxxx`)、`as_resolver_dict`(内部含真 key 供推理用)。
+- `services/inference_service._resolve_llm(model, platform)` 三级优先:① 客户端带 key → 用客户端全套(**保留旧版用户自设 API**);② 否则平台(enabled 且有 key,默认硅基流动 `https://api.siliconflow.cn/v1` + `Pro/deepseek-ai/DeepSeek-V3`);③ 否则 legacy global。run_chat/distill/memory_summary 增加 `platform` 形参。
+- `routers/inference.py`:三端点取 `platform_repo.get_config(db)`,**单价改用 DB 实时值** `cfg.cost_per_*`(管理员改价即时生效),并把 platform 传入 service;distill 免费判定纳入平台 key;移除对 `config.COST_PER_*` 的依赖。
+- `routers/admin.py`:`GET /api/admin/pricing`(掩码) + `POST /api/admin/pricing`(改型号/base_url/key/单价/开关);看板新增「平台模型与定价」可视化编辑区(开关+表单+保存,空 key 占位“留空=不修改”)。
+- `config.py`/`.env.example`:加 `PLATFORM_API_KEY`、`PLATFORM_BASE_URL`(默认硅基流动)、`PLATFORM_MODEL_ID`(默认 `Pro/deepseek-ai/DeepSeek-V3`)。`main.py` 启动播种单例。
+
+**验证**
+- compileall + import OK;`/api/admin/pricing` 已注册。
+- 单测 `_resolve_llm`:BYO key 优先、平台回退、平台禁用→无 key,三种全对。
+- TestClient(临时 sqlite + ADMIN_PHONES):普通用户读定价 403 / 管理员 200(默认值正确);改价 chat=3+设 key→掩码 `sk-t****7890`+key_set;**空 key 提交不清空已有 key**;**单价 99999 → 对话 402**(证明扣费走 DB 实时单价)。
+
+**待办缺口 / 下一步**
+- **前端(Codex)**:去掉 `SettingsModal` 的 API 设置界面;`api/inference.ts` 不再带 model 配置(发空 `model:{}`),让服务端走平台模型。旧版自设 API 想保留的话,可保留一个隐藏/高级入口。
+- **模型 ID 待用户确认**:需求写的是“deepseekV4pro”,我默认 `Pro/deepseek-ai/DeepSeek-V3`(硅基流动 Pro 档),实际型号请在后台「平台模型与定价」里改成硅基流动目录中的准确 ID。
+- **上线**:需重新构建后端镜像(`docker compose up -d --build`),并在后台或 `PLATFORM_API_KEY` 填硅基流动 key 才能真正用平台模型。
 
 ### 2026-06-02 · Claude · 后端上云部署配置（Docker + Postgres + Caddy）完成
 **完成**

@@ -11,9 +11,12 @@
 
 | 执行者 | 任务 | 锁定文件/模块 | 开始时间 |
 |--------|------|--------------|---------|
-| (空闲) | — | — | — |
+| (Codex 可领) | REQ-012 前端:去掉 API 设置界面、推理不再带 model 配置 | `琥珀Amber数字生命UI/src/components/SettingsModal.tsx`、`src/pages/Chat.tsx`、`src/api/inference.ts` | — |
 
 ## 🟢 最近完成 (RECENTLY DONE)
+
+- 2026-06-03 · Claude · **REQ-012 后端(硅基流动平台模型 + 管理员实时定价)完成**：新增 `platform_config` 单例表(provider key/base_url/model_id + platform_enabled + cost_per_chat/distill/snapshot,key 永远掩码返回);`repositories/platform_repo.py`(get/update/serialize/as_resolver_dict,首次从 env 播种);`inference_service._resolve_llm` 改为**三级优先**:客户端带 key→用客户端(保留旧版自设 API);否则平台硅基流动(启用且有 key);否则 legacy global。推理三端点改用 DB 实时单价(`cfg.cost_per_*`)并把 platform 传入;distill 免费判定纳入平台 key。管理员新增 `GET/POST /api/admin/pricing`(改型号/base_url/key/单价/开关,空 key=不改)+ 看板「平台模型与定价」可视化编辑区。config/.env.example 加 `PLATFORM_API_KEY/BASE_URL/MODEL_ID`(默认硅基流动 + `Pro/deepseek-ai/DeepSeek-V3`)。main.py 启动播种。验证:compileall+import、`/api/admin/pricing` 注册、_resolve_llm 三级优先单测、TestClient(403 普通/200 管理员、改价、掩码 sk-t****7890、空 key 不清空、单价 99999→对话 402)全过。**纯后端,未碰前端**。待 Codex 接前端去设置界面。锁定文件已释放。
+- 2026-06-02 · Claude · **后端上云部署配置(Docker+Postgres+Caddy)完成**：新增 `Amber/amber-engine/Dockerfile`(python:3.11-slim,无需编译器,带 /api/health HEALTHCHECK,CMD 按 `WEB_CONCURRENCY` 起 uvicorn)、`.dockerignore`;重写 `.env.example` 为当前商业化后端真实变量(ENV/SECRET_KEY/ADMIN_PHONES/DATABASE_URL/计费,删除已废弃的 relay/DEFAULT_API_KEY);新增 `deploy/docker-compose.yml`(db=postgres:16 + backend + caddy 三容器,变量插值+健康检查依赖,environment 注入 DATABASE_URL 指向 db)、`deploy/Caddyfile`(SITE_ADDRESS 有域名自动 HTTPS/无域名回落 :80,反代 backend:8000)、`docs/DEPLOY.md`(Ubuntu 22.04 一步步:装 Docker→swap→.env→compose up→验证→前端指向→运维备份)。验证:compose YAML 结构校验通过、相对路径 `../Amber/amber-engine` 解析到后端目录确认。**纯新增部署文件,未碰应用代码与前端**。锁定文件已释放。
 
 - 2026-06-02 · Claude · **后端上云部署配置(Docker+Postgres+Caddy)完成**：新增 `Amber/amber-engine/Dockerfile`(python:3.11-slim,无需编译器,带 /api/health HEALTHCHECK,CMD 按 `WEB_CONCURRENCY` 起 uvicorn)、`.dockerignore`;重写 `.env.example` 为当前商业化后端真实变量(ENV/SECRET_KEY/ADMIN_PHONES/DATABASE_URL/计费,删除已废弃的 relay/DEFAULT_API_KEY);新增 `deploy/docker-compose.yml`(db=postgres:16 + backend + caddy 三容器,变量插值+健康检查依赖,environment 注入 DATABASE_URL 指向 db)、`deploy/Caddyfile`(SITE_ADDRESS 有域名自动 HTTPS/无域名回落 :80,反代 backend:8000)、`docs/DEPLOY.md`(Ubuntu 22.04 一步步:装 Docker→swap→.env→compose up→验证→前端指向→运维备份)。验证:compose YAML 结构校验通过、相对路径 `../Amber/amber-engine` 解析到后端目录确认。**纯新增部署文件,未碰应用代码与前端**。锁定文件已释放。
 - 2026-06-02 · Codex · **当前功能实现规划已更新到 work.md**：补充协作状态、已可用能力、P0/P1/P2/P3 近期优先级队列与推荐下一步 process；明确 Claude 当前锁定后端上云部署配置，Codex 不触碰部署文件；QQ bot 继续保持独立分支/主线最低优先级。锁定文件已释放。

@@ -16,11 +16,25 @@ from schemas import (
 from services.chat_service import call_llm_with_retry
 
 
-def _resolve_llm(model):
-    """User-supplied key wins; else fall back to server global config."""
-    api_key = model.api_key or state.system_stats.get("global_api_key")
-    base_url = model.base_url or state.system_stats.get("global_base_url") or "https://api.openai.com/v1"
-    model_id = model.model_id or state.system_stats.get("global_model_id") or "gpt-4o-mini"
+def _resolve_llm(model, platform: dict | None = None):
+    """Resolve effective (api_key, base_url, model_id).
+
+    Priority:
+      1. Client brings its own key (BYO mode) → use the client's full config.
+      2. Else the platform provider (e.g. SiliconFlow) if enabled + key set.
+      3. Else the legacy server global config (state.system_stats).
+    """
+    if model and model.api_key:
+        return (
+            model.api_key,
+            model.base_url or "https://api.openai.com/v1",
+            model.model_id or "gpt-4o-mini",
+        )
+    if platform and platform.get("enabled") and platform.get("api_key"):
+        return platform["api_key"], platform["base_url"], platform["model_id"]
+    api_key = state.system_stats.get("global_api_key")
+    base_url = state.system_stats.get("global_base_url") or "https://api.openai.com/v1"
+    model_id = state.system_stats.get("global_model_id") or "gpt-4o-mini"
     return api_key, base_url, model_id
 
 
@@ -107,10 +121,10 @@ def _parse_mood_and_clean(ai_raw: str, input_len: int) -> tuple[str, MoodDelta]:
     return content, mood
 
 
-async def run_chat(req: InferenceChatRequest, cost_fragments: int) -> InferenceChatResponse:
-    api_key, base_url, model_id = _resolve_llm(req.model)
+async def run_chat(req: InferenceChatRequest, cost_fragments: int, platform: dict | None = None) -> InferenceChatResponse:
+    api_key, base_url, model_id = _resolve_llm(req.model, platform)
     if not api_key:
-        raise ValueError("Missing LLM API key (request or server global)")
+        raise ValueError("Missing LLM API key (request or platform)")
 
     content = (req.input or {}).get("content", "").strip()
     payload = _build_chat_prompt(req.persona, req.context, content)
@@ -134,13 +148,13 @@ async def run_chat(req: InferenceChatRequest, cost_fragments: int) -> InferenceC
     )
 
 
-async def run_distill(req: InferenceDistillRequest, cost_fragments: int) -> InferenceDistillResponse:
+async def run_distill(req: InferenceDistillRequest, cost_fragments: int, platform: dict | None = None) -> InferenceDistillResponse:
     anger = req.traits_map.get("anger", 50)
     humor = req.traits_map.get("humor", 50)
     empathy = req.traits_map.get("empathy", 50)
     new_trait = f"[核心特质]: {req.name} [情绪阈值]: 易怒({anger}%) 幽默({humor}%) 共情({empathy}%)"
 
-    api_key, base_url, model_id = _resolve_llm(req.model)
+    api_key, base_url, model_id = _resolve_llm(req.model, platform)
     if not api_key:
         # No key → return deterministic defaults (client can still create persona)
         return InferenceDistillResponse(
@@ -178,10 +192,10 @@ async def run_distill(req: InferenceDistillRequest, cost_fragments: int) -> Infe
     )
 
 
-async def run_memory_summary(req: InferenceMemorySummaryRequest, cost_fragments: int) -> InferenceMemorySummaryResponse:
-    api_key, base_url, model_id = _resolve_llm(req.model)
+async def run_memory_summary(req: InferenceMemorySummaryRequest, cost_fragments: int, platform: dict | None = None) -> InferenceMemorySummaryResponse:
+    api_key, base_url, model_id = _resolve_llm(req.model, platform)
     if not api_key:
-        raise ValueError("Missing LLM API key (request or server global)")
+        raise ValueError("Missing LLM API key (request or platform)")
 
     bundle = "\n".join(f"{'用户' if m.role == 'user' else req.persona_name}: {m.content}" for m in req.messages)
     prompt = f"""你是数字生命意识流的最高压缩结晶器。将以下对话深度蒸馏为一行高密度【核心记忆】。

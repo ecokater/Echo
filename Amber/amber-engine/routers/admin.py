@@ -15,9 +15,25 @@ from sqlalchemy.orm import Session
 import state
 from database import User, SharedPersona
 from deps import get_db, get_current_admin
-from repositories import admin_repo, explore_repo
+from repositories import admin_repo, explore_repo, platform_repo
+from schemas import PlatformConfigResponse, PlatformConfigUpdate
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
+
+
+@router.get("/pricing", response_model=PlatformConfigResponse)
+def get_pricing(_: User = Depends(get_current_admin), db: Session = Depends(get_db)):
+    return platform_repo.serialize(platform_repo.get_config(db))
+
+
+@router.post("/pricing", response_model=PlatformConfigResponse)
+def update_pricing(
+    req: PlatformConfigUpdate,
+    _: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    cfg = platform_repo.update_config(db, **req.model_dump(exclude_unset=True))
+    return platform_repo.serialize(cfg)
 
 _PROCESS_START = time.time()
 
@@ -139,6 +155,22 @@ th{color:var(--mut);font-weight:500}
 <main>
   <div id="err" class="err"></div>
   <div class="cards" id="cards"></div>
+  <h2>平台模型与定价（硅基流动 / DeepSeek）</h2>
+  <div class="card" id="pricing">
+    <div class="row" style="flex-wrap:wrap;gap:12px">
+      <label>启用平台模型 <input type="checkbox" id="p_enabled"></label>
+      <label>Base URL <input id="p_base" style="width:240px"></label>
+      <label>模型 ID <input id="p_model" style="width:220px"></label>
+      <label>API Key <input id="p_key" type="password" placeholder="留空=不修改" style="width:200px"> <span id="p_keyhint" class="mut"></span></label>
+    </div>
+    <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:10px">
+      <label>对话单价 <input id="p_chat" type="number" min="0" style="width:80px"></label>
+      <label>蒸馏单价 <input id="p_distill" type="number" min="0" style="width:80px"></label>
+      <label>结晶单价 <input id="p_snap" type="number" min="0" style="width:80px"></label>
+      <button onclick="savePricing()">保存定价</button>
+      <span id="p_msg" class="mut"></span>
+    </div>
+  </div>
   <h2>服务器负载</h2><div class="cards" id="sys"></div>
   <h2>消耗记录（usage_events）</h2><div class="scroll"><table id="usage"></table></div>
   <h2>碎片流水（ledger）</h2><div class="scroll"><table id="ledger"></table></div>
@@ -173,6 +205,7 @@ async function loadAll(){
       card('公开分享',o.shares.public,'下架 '+o.shares.removed),
       card('累计安装',o.shares.installs_total),
     ].join('');
+    await loadPricing();
     const s=await api('/api/admin/system');
     document.getElementById('sys').innerHTML=[
       card('运行时长',Math.floor(s.uptime_seconds/3600)+'h'+Math.floor(s.uptime_seconds%3600/60)+'m'),
@@ -189,5 +222,31 @@ async function loadAll(){
   }catch(e){err.textContent='加载失败：'+e.message+'（请确认令牌为管理员）';}
 }
 async function rm(id){if(!confirm('确认下架该分享？'))return;try{await api('/api/admin/shares/'+id+'/remove',{method:'POST'});loadAll();}catch(e){alert(e.message);}}
+async function loadPricing(){
+  const p=await api('/api/admin/pricing');
+  document.getElementById('p_enabled').checked=p.platform_enabled;
+  document.getElementById('p_base').value=p.provider_base_url||'';
+  document.getElementById('p_model').value=p.provider_model_id||'';
+  document.getElementById('p_chat').value=p.cost_per_chat;
+  document.getElementById('p_distill').value=p.cost_per_distill;
+  document.getElementById('p_snap').value=p.cost_per_snapshot;
+  document.getElementById('p_keyhint').textContent=p.api_key_set?('已配置 '+p.api_key_masked):'未配置';
+}
+async function savePricing(){
+  const body={
+    platform_enabled:document.getElementById('p_enabled').checked,
+    provider_base_url:document.getElementById('p_base').value.trim(),
+    provider_model_id:document.getElementById('p_model').value.trim(),
+    cost_per_chat:parseInt(document.getElementById('p_chat').value)||0,
+    cost_per_distill:parseInt(document.getElementById('p_distill').value)||0,
+    cost_per_snapshot:parseInt(document.getElementById('p_snap').value)||0,
+  };
+  const key=document.getElementById('p_key').value.trim();
+  if(key)body.provider_api_key=key;
+  const msg=document.getElementById('p_msg');
+  try{await api('/api/admin/pricing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    document.getElementById('p_key').value='';msg.textContent='已保存 ✓';msg.className='ok';await loadPricing();
+  }catch(e){msg.textContent='保存失败：'+e.message;msg.className='err';}
+}
 if(localStorage.getItem(TK))loadAll();
 </script></body></html>"""

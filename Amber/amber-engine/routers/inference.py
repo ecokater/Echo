@@ -9,10 +9,9 @@ import time
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-import config
 from database import User
 from deps import get_db, get_current_user
-from repositories import usage_repo
+from repositories import usage_repo, platform_repo
 from schemas import (
     InferenceChatRequest,
     InferenceChatResponse,
@@ -116,8 +115,10 @@ async def inference_chat(
 ):
     started = time.perf_counter()
     endpoint = "/api/inference/chat"
+    cfg = platform_repo.get_config(db)
+    platform = platform_repo.as_resolver_dict(cfg)
     try:
-        cost = _charge(db, user.id, config.COST_PER_CHAT, "consume_chat")
+        cost = _charge(db, user.id, cfg.cost_per_chat, "consume_chat")
     except HTTPException:
         _record_usage(
             db,
@@ -132,7 +133,7 @@ async def inference_chat(
         raise
 
     try:
-        response = await inference_service.run_chat(req, cost_fragments=cost)
+        response = await inference_service.run_chat(req, cost_fragments=cost, platform=platform)
         _record_usage(
             db,
             user_id=user.id,
@@ -201,8 +202,11 @@ async def inference_distill(
 ):
     started = time.perf_counter()
     endpoint = "/api/inference/distill"
-    if not (req.model.api_key or _has_global_key()):
-        response = await inference_service.run_distill(req, cost_fragments=0)
+    cfg = platform_repo.get_config(db)
+    platform = platform_repo.as_resolver_dict(cfg)
+    has_platform = platform["enabled"] and bool(platform["api_key"])
+    if not (req.model.api_key or has_platform or _has_global_key()):
+        response = await inference_service.run_distill(req, cost_fragments=0, platform=platform)
         _record_usage(
             db,
             user_id=user.id,
@@ -217,7 +221,7 @@ async def inference_distill(
         return response
 
     try:
-        cost = _charge(db, user.id, config.COST_PER_DISTILL, "consume_distill")
+        cost = _charge(db, user.id, cfg.cost_per_distill, "consume_distill")
     except HTTPException:
         _record_usage(
             db,
@@ -232,7 +236,7 @@ async def inference_distill(
         raise
 
     try:
-        response = await inference_service.run_distill(req, cost_fragments=cost)
+        response = await inference_service.run_distill(req, cost_fragments=cost, platform=platform)
         _record_usage(
             db,
             user_id=user.id,
@@ -278,8 +282,10 @@ async def inference_memory_summary(
 ):
     started = time.perf_counter()
     endpoint = "/api/inference/memory-summary"
+    cfg = platform_repo.get_config(db)
+    platform = platform_repo.as_resolver_dict(cfg)
     try:
-        cost = _charge(db, user.id, config.COST_PER_SNAPSHOT, "consume_snapshot")
+        cost = _charge(db, user.id, cfg.cost_per_snapshot, "consume_snapshot")
     except HTTPException:
         _record_usage(
             db,
@@ -294,7 +300,7 @@ async def inference_memory_summary(
         raise
 
     try:
-        response = await inference_service.run_memory_summary(req, cost_fragments=cost)
+        response = await inference_service.run_memory_summary(req, cost_fragments=cost, platform=platform)
         _record_usage(
             db,
             user_id=user.id,
