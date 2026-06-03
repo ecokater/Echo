@@ -160,7 +160,8 @@ th{color:var(--mut);font-weight:500}
     <div class="row" style="flex-wrap:wrap;gap:12px">
       <label>启用平台模型 <input type="checkbox" id="p_enabled"></label>
       <label>Base URL <input id="p_base" style="width:240px"></label>
-      <label>模型 ID <input id="p_model" style="width:220px"></label>
+      <label>选择模型 <select id="p_model_pick" style="width:240px" onchange="if(this.value)document.getElementById('p_model').value=this.value"></select></label>
+      <label>模型 ID <input id="p_model" style="width:240px" placeholder="也可手动输入"></label>
       <label>API Key <input id="p_key" type="password" placeholder="留空=不修改" style="width:200px"> <span id="p_keyhint" class="mut"></span></label>
     </div>
     <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:10px">
@@ -222,11 +223,28 @@ async function loadAll(){
   }catch(e){err.textContent='加载失败：'+e.message+'（请确认令牌为管理员）';}
 }
 async function rm(id){if(!confirm('确认下架该分享？'))return;try{await api('/api/admin/shares/'+id+'/remove',{method:'POST'});loadAll();}catch(e){alert(e.message);}}
+const MODELS=[
+  ['DeepSeek 深度求索',['deepseek-ai/DeepSeek-V4-Pro','deepseek-ai/DeepSeek-V4-Flash','deepseek-ai/DeepSeek-V3.2','Pro/deepseek-ai/DeepSeek-V3.2','deepseek-ai/DeepSeek-V3.1-Terminus','Pro/deepseek-ai/DeepSeek-V3.1-Terminus','deepseek-ai/DeepSeek-V3','Pro/deepseek-ai/DeepSeek-V3','deepseek-ai/DeepSeek-R1','Pro/deepseek-ai/DeepSeek-R1','deepseek-ai/DeepSeek-R1-0528-Qwen3-8B']],
+  ['通义千问 Qwen',['Qwen/Qwen3.5-397B-A17B','Qwen/Qwen3.5-122B-A10B','Qwen/Qwen3.6-35B-A3B','Qwen/Qwen3.6-27B','Qwen/Qwen3.5-35B-A3B','Qwen/Qwen3.5-27B','Qwen/Qwen3.5-9B','Qwen/Qwen3.5-4B','Qwen/Qwen3-32B','Qwen/Qwen3-30B-A3B-Instruct-2507','Qwen/Qwen3-14B','Qwen/Qwen3-8B','Qwen/Qwen3-Coder-30B-A3B-Instruct','Qwen/Qwen2.5-72B-Instruct-128K','Qwen/Qwen2.5-72B-Instruct','Qwen/Qwen2.5-32B-Instruct','Qwen/Qwen2.5-14B-Instruct','Qwen/Qwen2.5-7B-Instruct','Pro/Qwen/Qwen2.5-7B-Instruct']],
+  ['智谱 GLM',['Pro/zai-org/GLM-5.1','Pro/zai-org/GLM-5','Pro/zai-org/GLM-4.7','zai-org/GLM-4.5-Air','THUDM/GLM-4-32B-0414','THUDM/GLM-4-9B-0414','THUDM/GLM-Z1-9B-0414']],
+  ['Kimi 月之暗面',['Pro/moonshotai/Kimi-K2.6','Pro/moonshotai/Kimi-K2.5']],
+  ['MiniMax',['MiniMaxAI/MiniMax-M2.5','Pro/MiniMaxAI/MiniMax-M2.5']],
+  ['视觉 / 多模态',['Qwen/Qwen3-VL-32B-Instruct','Qwen/Qwen3-VL-32B-Thinking','Qwen/Qwen3-VL-30B-A3B-Instruct','Qwen/Qwen3-VL-30B-A3B-Thinking','Qwen/Qwen3-VL-8B-Instruct','Qwen/Qwen3-VL-8B-Thinking','zai-org/GLM-4.5V','Qwen/Qwen3-Omni-30B-A3B-Instruct','Qwen/Qwen3-Omni-30B-A3B-Thinking']],
+  ['其他',['ByteDance-Seed/Seed-OSS-36B-Instruct','inclusionAI/Ling-flash-2.0','inclusionAI/Ling-mini-2.0','stepfun-ai/Step-3.5-Flash','tencent/Hunyuan-A13B-Instruct','tencent/Hunyuan-MT-7B']],
+];
+function fillModelPicker(){
+  const sel=document.getElementById('p_model_pick');
+  if(sel.dataset.filled)return;
+  sel.innerHTML='<option value="">— 选择后填入右侧 —</option>'+MODELS.map(g=>'<optgroup label="'+g[0]+'">'+g[1].map(m=>'<option value="'+m+'">'+m+'</option>').join('')+'</optgroup>').join('');
+  sel.dataset.filled='1';
+}
 async function loadPricing(){
+  fillModelPicker();
   const p=await api('/api/admin/pricing');
   document.getElementById('p_enabled').checked=p.platform_enabled;
   document.getElementById('p_base').value=p.provider_base_url||'';
   document.getElementById('p_model').value=p.provider_model_id||'';
+  document.getElementById('p_model_pick').value=p.provider_model_id||'';
   document.getElementById('p_chat').value=p.cost_per_chat;
   document.getElementById('p_distill').value=p.cost_per_distill;
   document.getElementById('p_snap').value=p.cost_per_snapshot;
