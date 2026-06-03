@@ -92,6 +92,21 @@ base: `http://127.0.0.1:8000`（生产改云端域名）
 
 ## 日志
 
+### 2026-06-03 · Claude · REQ-012 前端：去 API 设置界面 + 默认平台模型（P0 收尾）
+**完成**
+- 用户要求 Claude 一并做前端(原计划留 Codex)。看板无冲突,认领后实现。
+- `api/inference.ts::modelFromSettings()`:默认返回空 `{}` → 服务端走平台模型(硅基流动/DeepSeek);仅当 `localStorage.amber_use_custom_api==="1"` 且有 apiKey 时返回自带 key(BYO)。返回类型标注 `InferenceModel`。
+- `components/SettingsModal.tsx`:主界面移除「模型连接设置」表单;改为「智能模型已就绪」提示卡(无需配置);新增「高级 · 使用自己的模型 API」可折叠区(framer-motion 高度动画),内含「启用自定义模型」开关 + 原 preset/apiKey/baseUrl/modelId 表单;保存时写 `amber_use_custom_api` 标志 + 头像 + (启用时)api 配置。保留「我的头像」。
+- `Chat.tsx`/`CreatePersona.tsx` 未改:`modelFromSettings()` 签名兼容,自动获得「默认平台」行为。
+
+**验证**
+- `npx tsc --noEmit -p tsconfig.app.json` 退出 0;`vite build` 通过(386KB JS)。
+
+**下一步 / 上线清单**
+- 重建后端镜像并部署(`docker compose up -d --build`);后台「平台模型与定价」填硅基流动 key + 准确 DeepSeek 型号 ID(待用户确认,默认 `Pro/deepseek-ai/DeepSeek-V3`)。
+- 前端重新打包,`VITE_API_BASE_URL` 指向服务器,验证不带 key 也能正常对话(走平台)。
+- 服务器拉代码通道:GitHub 被墙,需 Gitee 镜像或 scp(用户暂选"先不上服务器")。
+
 ### 2026-06-03 · Claude · REQ-012 后端：硅基流动平台模型 + 管理员实时定价（P0）
 **完成**
 - 认领 REQ-012 后端部分（前端「去 API 设置界面」留 Codex,已在 working.md 标可领）。

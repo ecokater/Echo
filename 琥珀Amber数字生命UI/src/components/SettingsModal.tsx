@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { X, Cpu, Check, Camera, User as UserIcon } from "lucide-react";
+import { X, Check, Camera, User as UserIcon, Sparkles, ChevronDown } from "lucide-react";
 import { pickAvatar } from "@/lib/avatar";
 
 const KEY = "amber_global_api";
 const AVATAR_KEY = "amber_user_avatar";
+const CUSTOM_FLAG = "amber_use_custom_api";
 
 interface Cfg { apiKey?: string; baseUrl?: string; modelId?: string }
 
@@ -15,26 +16,32 @@ const PRESETS = [
 ];
 
 export default function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const [userAvatar, setUserAvatar] = useState<string | null>(null);
+  const [useCustom, setUseCustom] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [apiKey, setApiKey] = useState("");
   const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
   const [modelId, setModelId] = useState("gpt-4o-mini");
-  const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     if (!open) return;
+    setUserAvatar(localStorage.getItem(AVATAR_KEY));
+    const custom = localStorage.getItem(CUSTOM_FLAG) === "1";
+    setUseCustom(custom);
+    setShowAdvanced(custom);
     try {
       const c: Cfg = JSON.parse(localStorage.getItem(KEY) || "{}");
       if (c.apiKey) setApiKey(c.apiKey);
       if (c.baseUrl) setBaseUrl(c.baseUrl);
       if (c.modelId) setModelId(c.modelId);
     } catch { /* ignore */ }
-    setUserAvatar(localStorage.getItem(AVATAR_KEY));
   }, [open]);
 
   const save = () => {
-    localStorage.setItem(KEY, JSON.stringify({ apiKey, baseUrl, modelId }));
     if (userAvatar) localStorage.setItem(AVATAR_KEY, userAvatar);
+    localStorage.setItem(CUSTOM_FLAG, useCustom ? "1" : "0");
+    if (useCustom) localStorage.setItem(KEY, JSON.stringify({ apiKey, baseUrl, modelId }));
     setSaved(true);
     setTimeout(() => { setSaved(false); onClose(); }, 700);
   };
@@ -60,7 +67,7 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
             transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold"><Cpu size={15} className="text-accent" /> 模型连接设置</h3>
+              <h3 className="flex items-center gap-2 text-sm font-semibold"><UserIcon size={15} className="text-accent" /> 设置</h3>
               <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted/60"><X size={16} /></button>
             </div>
 
@@ -74,35 +81,68 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
               <div className="text-xs text-muted-foreground">我的头像<br /><span className="text-[10px]">点击更换 · 仅保存在本地</span></div>
             </div>
 
-            <div className="mb-4 flex gap-2">
-              {PRESETS.map((p) => (
-                <button key={p.name} onClick={() => { setBaseUrl(p.baseUrl); setModelId(p.modelId); }}
-                  className="flex-1 rounded-xl glass px-2 py-1.5 text-xs hover:bg-muted/40 transition-colors">{p.name}</button>
-              ))}
+            {/* 主版本：平台统一供模，无需配置 */}
+            <div className="flex items-start gap-3 rounded-2xl glass p-4">
+              <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-primary text-primary-foreground"><Sparkles size={16} /></div>
+              <div className="text-xs leading-relaxed text-muted-foreground">
+                <span className="font-medium text-foreground">智能模型已就绪</span><br />
+                平台已接入高性能模型，直接开始对话即可，无需任何配置。
+              </div>
             </div>
 
-            <div className="space-y-3">
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">API Key</label>
-                <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className={field} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Base URL</label>
-                <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} className={field} />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">模型 ID</label>
-                <input value={modelId} onChange={(e) => setModelId(e.target.value)} className={field} />
-              </div>
-            </div>
+            {/* 高级：保留「自带 API」能力，默认折叠 */}
+            <button onClick={() => setShowAdvanced((v) => !v)}
+              className="mt-3 flex w-full items-center justify-between rounded-xl px-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
+              <span>高级 · 使用自己的模型 API</span>
+              <ChevronDown size={15} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
+            </button>
+
+            <AnimatePresence initial={false}>
+              {showAdvanced && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.22 }}
+                  className="overflow-hidden"
+                >
+                  <label className="mb-3 mt-1 flex items-center gap-2 text-xs text-foreground/90">
+                    <input type="checkbox" checked={useCustom} onChange={(e) => setUseCustom(e.target.checked)} className="accent-[var(--accent)]" />
+                    启用自定义模型（关闭则使用平台模型）
+                  </label>
+                  <div className={useCustom ? "" : "pointer-events-none opacity-50"}>
+                    <div className="mb-3 flex gap-2">
+                      {PRESETS.map((p) => (
+                        <button key={p.name} onClick={() => { setBaseUrl(p.baseUrl); setModelId(p.modelId); }}
+                          className="flex-1 rounded-xl glass px-2 py-1.5 text-xs hover:bg-muted/40 transition-colors">{p.name}</button>
+                      ))}
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">API Key</label>
+                        <input type="password" value={apiKey} onChange={(e) => setApiKey(e.target.value)} placeholder="sk-..." className={field} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">Base URL</label>
+                        <input value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} className={field} />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-muted-foreground">模型 ID</label>
+                        <input value={modelId} onChange={(e) => setModelId(e.target.value)} className={field} />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
+                      密钥仅存储在本地浏览器，对话时随请求发送至你自己的模型服务。
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <button onClick={save}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">
-              {saved ? <><Check size={16} /> 已保存</> : "保存配置"}
+              {saved ? <><Check size={16} /> 已保存</> : "保存"}
             </button>
-            <p className="mt-3 text-center text-[10px] leading-relaxed text-muted-foreground">
-              密钥仅存储在本地浏览器，对话时随请求发送至你自己的模型服务。
-            </p>
           </motion.div>
         </motion.div>
       )}
