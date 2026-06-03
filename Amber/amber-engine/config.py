@@ -38,4 +38,4 @@ LOW_BALANCE_THRESHOLD = int(os.getenv("LOW_BALANCE_THRESHOLD", "10"))
 # （管理员可在后台实时修改型号与单价）。
 PLATFORM_API_KEY = os.getenv("PLATFORM_API_KEY", "")
 PLATFORM_BASE_URL = os.getenv("PLATFORM_BASE_URL", "https://api.siliconflow.cn/v1")
-PLATFORM_MODEL_ID = os.getenv("PLATFORM_MODEL_ID", "Pro/deepseek-ai/DeepSeek-V3")
+PLATFORM_MODEL_ID = os.getenv("PLATFORM_MODEL_ID", "deepseek-ai/DeepSeek-V4-Pro")

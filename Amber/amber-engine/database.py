@@ -231,8 +231,8 @@ class PlatformConfig(Base):
     id = Column(Integer, primary_key=True, default=1)
     provider_base_url = Column(String, default="https://api.siliconflow.cn/v1",
                                server_default="https://api.siliconflow.cn/v1", nullable=False)
-    provider_model_id = Column(String, default="Pro/deepseek-ai/DeepSeek-V3",
-                               server_default="Pro/deepseek-ai/DeepSeek-V3", nullable=False)
+    provider_model_id = Column(String, default="deepseek-ai/DeepSeek-V4-Pro",
+                               server_default="deepseek-ai/DeepSeek-V4-Pro", nullable=False)
     provider_api_key = Column(Text, nullable=True)
     # When true, requests without a client key fall back to the platform provider.
     platform_enabled = Column(Boolean, default=True, server_default="1", nullable=False)
