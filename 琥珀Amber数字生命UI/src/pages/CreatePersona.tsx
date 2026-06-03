@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, Sparkles, Loader2, Wand2, Camera } from "lucide-react";
+import { ArrowLeft, Sparkles, Loader2, Wand2, Camera, Upload } from "lucide-react";
 import { personaStore, corpusStore } from "@/lib/localdb";
 import { inferenceApi, modelFromSettings } from "@/api/inference";
 import { pickAvatar } from "@/lib/avatar";
+import { parseChatExport, pickChatFile } from "@/lib/chatImport";
 import { useApplySavedTheme } from "@/lib/theme";
 
 const GENDERS = [
@@ -42,6 +43,13 @@ export default function CreatePersonaPage() {
   const [error, setError] = useState("");
 
   useApplySavedTheme(true);
+
+  const importChat = async () => {
+    const t = await pickChatFile();
+    if (!t) return;
+    const cleaned = parseChatExport(t);
+    if (cleaned) setCorpus((prev) => (prev.trim() ? prev.trimEnd() + "\n" : "") + cleaned);
+  };
 
   const submit = async () => {
     setError("");
@@ -137,8 +145,17 @@ export default function CreatePersonaPage() {
             <Slider label="共情" value={empathy} onChange={setEmpathy} />
           </div>
 
-          <textarea value={corpus} onChange={(e) => setCorpus(e.target.value)} rows={3}
-            placeholder="（可选）原始语料：粘贴对话记录 / 人设文本，作为出厂记忆固化" className={field + " resize-none"} />
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-muted-foreground">原始语料（可选）</span>
+              <button type="button" onClick={importChat}
+                className="flex items-center gap-1 rounded-lg glass px-2.5 py-1 text-xs text-accent transition-colors hover:bg-accent/15">
+                <Upload size={13} /> 导入微信/QQ记录
+              </button>
+            </div>
+            <textarea value={corpus} onChange={(e) => setCorpus(e.target.value)} rows={3}
+              placeholder="粘贴对话记录 / 人设文本，或点上方导入聊天记录，作为出厂记忆固化" className={field + " resize-none"} />
+          </div>
 
           {error && <p className="text-center text-xs text-destructive">{error}</p>}
 

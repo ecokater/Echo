@@ -6,7 +6,7 @@ import {
   Settings, Search, Menu, MessageCircle, Compass, User as UserIcon,
   Heart, Activity, Gauge, ChevronRight, X, Gem, Zap, PanelRightClose,
   PanelRightOpen, Cpu, LogOut, Wallet, ReceiptText, Info,
-  ShieldCheck, History, Headphones,
+  ShieldCheck, History, Headphones, FileText,
 } from "lucide-react";
 import { getBalance, getLedger, type LedgerEntry } from "@/api/wallet";
 import { listOrders, type BillingOrder } from "@/api/billing";
@@ -14,10 +14,14 @@ import { getUsageEvents, type UsageEvent } from "@/api/system";
 import { personaStore, messageStore, corpusStore } from "@/lib/localdb";
 import { inferenceApi, modelFromSettings } from "@/api/inference";
 import { buildContext } from "@/lib/localRag";
+import { annealAll, maybeAutoOrganize } from "@/lib/janitor";
 import type { LocalPersona, LocalMessage } from "@/types/skill";
 import { useAuthStore } from "@/stores/auth";
 import { colorFromName } from "@/lib/avatar";
 import SettingsModal from "@/components/SettingsModal";
+import MemoryPanel from "@/components/MemoryPanel";
+import ExplorePanel from "@/components/ExplorePanel";
+import ChatImportModal from "@/components/ChatImportModal";
 import { useThemePreference } from "@/lib/theme";
 
 /** Circular persona avatar: image if set, else initial on a name-derived color. */
@@ -102,8 +106,9 @@ function EmotionMeter({ label, value, hue }: { label: string; value: number; hue
   );
 }
 
-function PlusMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+function PlusMenu({ open, onClose, onImport }: { open: boolean; onClose: () => void; onImport: () => void }) {
   const items = [
+    { icon: FileText, label: "导入聊天记录", action: onImport },
     { icon: ImageIcon, label: "发送图片" }, { icon: Scissors, label: "记忆截断" },
     { icon: Brain, label: "唤起记忆节点" }, { icon: Zap, label: "情绪快照" },
   ];
@@ -129,7 +134,7 @@ function PlusMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             {items.map((it, index) => (
               <motion.button
                 key={it.label}
-                onClick={onClose}
+                onClick={() => { it.action?.(); onClose(); }}
                 className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-foreground/90 hover:bg-accent/15 transition-colors"
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -216,6 +221,9 @@ export default function ChatPage() {
   const [plus, setPlus] = useState(false);
   const [fragModal, setFragModal] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [memoryOpen, setMemoryOpen] = useState(false);
+  const [exploreOpen, setExploreOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   const [tab, setTab] = useState("chat");
   const [mePanel, setMePanel] = useState<MePanel>("overview");
   const [fragments, setFragments] = useState(0);
@@ -240,13 +248,16 @@ export default function ChatPage() {
 
   const refreshBalance = () => getBalance().then((b) => setFragments(b.balance)).catch(() => {});
 
+  const reloadPersonas = () =>
+    personaStore.list().then((ps) => {
+      setPersonas(ps);
+      setActiveId((cur) => cur ?? ps[0]?.id ?? null);
+    }).catch(() => {});
+
   // Personas now live in local IndexedDB (Local-first). Balance still from server.
   useEffect(() => {
     refreshBalance();
-    personaStore.list().then((ps) => {
-      setPersonas(ps);
-      if (ps.length && !activeId) setActiveId(ps[0].id);
-    }).catch(() => {});
+    reloadPersonas();
   }, []);
 
   // Chat history from local store. No WebSocket: replies are synchronous via inference proxy.
@@ -254,6 +265,15 @@ export default function ChatPage() {
     if (!activeId) { setMessages([]); return; }
     messageStore.list(activeId).then((h) => setMessages(h.map(toMsg))).catch(() => {});
   }, [activeId]);
+
+  // Local Janitor: emotion annealing toward baseline over idle time (free, local).
+  useEffect(() => {
+    let alive = true;
+    const run = () => annealAll().then((changed) => { if (changed && alive) reloadPersonas(); }).catch(() => {});
+    run();
+    const t = setInterval(run, 5 * 60 * 1000);
+    return () => { alive = false; clearInterval(t); };
+  }, []);
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }, [messages]);
 
@@ -310,6 +330,8 @@ export default function ChatPage() {
       // 6. persist memory candidates (e.g. 钢印记忆) locally
       if (res.memory_candidates?.length) await corpusStore.bulkAdd(activeId, res.memory_candidates, true);
       refreshBalance();
+      // 7. background memory crystallization (throttled, never blocks chat)
+      void maybeAutoOrganize(activeId, active.name);
     } catch (e: any) {
       if (e?.response?.status === 402) setFragModal(true);
       else setMessages((prev) => [...prev, { id: `err-${Date.now()}`, role: "amber", text: "连接异常，请稍后再试。", time: "" }]);
@@ -357,6 +379,16 @@ export default function ChatPage() {
             </div>
           </button>
         ))}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={() => setExploreOpen(true)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.02]">
+          <Compass size={16} className="text-accent" /> 探索
+        </button>
+        <button onClick={() => setMemoryOpen(true)}
+          className="flex flex-1 items-center justify-center gap-1.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.02]">
+          <Brain size={16} className="text-accent" /> 记忆库
+        </button>
       </div>
       <button onClick={() => navigate("/recharge")}
         className="flex items-center gap-2.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.01]">
@@ -429,7 +461,7 @@ export default function ChatPage() {
             <button onClick={() => setPlus((p) => !p)} className="grid h-9 w-9 place-items-center rounded-xl text-accent hover:bg-accent/15 transition-colors">
               <Plus size={20} className={plus ? "rotate-45 transition-transform" : "transition-transform"} />
             </button>
-            <PlusMenu open={plus} onClose={() => setPlus(false)} />
+            <PlusMenu open={plus} onClose={() => setPlus(false)} onImport={() => setImportOpen(true)} />
           </div>
           <textarea rows={1} value={input} onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
@@ -688,14 +720,17 @@ export default function ChatPage() {
           <div className="flex flex-1 overflow-hidden">
             <AnimatePresence mode="wait" initial={false}>
               <motion.div
-                key={tab === "me" ? "me" : "chat"}
+                key={tab}
                 className="flex h-full w-full"
-                initial={{ opacity: 0, x: tab === "me" ? 24 : -18 }}
+                initial={{ opacity: 0, x: 16 }}
                 animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: tab === "me" ? -18 : 18 }}
+                exit={{ opacity: 0, x: -16 }}
                 transition={{ type: "spring", stiffness: 420, damping: 38, mass: 0.86 }}
               >
-                {tab === "me" ? MeArea : ChatArea}
+                {tab === "me" ? MeArea
+                  : tab === "memory" ? <MemoryPanel personaId={activeId} personaName={active?.name} />
+                  : tab === "explore" ? <ExplorePanel personas={personas} onInstalled={reloadPersonas} />
+                  : ChatArea}
               </motion.div>
             </AnimatePresence>
           </div>
@@ -729,6 +764,39 @@ export default function ChatPage() {
       )}
       <FragmentModal open={fragModal} onClose={() => setFragModal(false)} onRecharge={() => { setFragModal(false); navigate("/recharge"); }} />
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <ChatImportModal open={importOpen} onClose={() => setImportOpen(false)} personaId={activeId} personaName={active?.name} />
+
+      <AnimatePresence>
+        {exploreOpen && (
+          <motion.div className="fixed inset-0 z-50 grid place-items-center p-4 md:p-6"
+            style={{ background: "color-mix(in srgb, var(--background) 55%, transparent)", backdropFilter: "blur(8px)" }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+            onClick={() => setExploreOpen(false)}>
+            <motion.div className="flex h-[82vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl glass-strong shadow-2xl"
+              initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
+              onClick={(e) => e.stopPropagation()}>
+              <ExplorePanel personas={personas} onInstalled={reloadPersonas} onClose={() => setExploreOpen(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {memoryOpen && (
+          <motion.div className="fixed inset-0 z-50 grid place-items-center p-4 md:p-6"
+            style={{ background: "color-mix(in srgb, var(--background) 55%, transparent)", backdropFilter: "blur(8px)" }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+            onClick={() => setMemoryOpen(false)}>
+            <motion.div className="flex h-[82vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl glass-strong shadow-2xl"
+              initial={{ opacity: 0, y: 30, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 20, scale: 0.97 }}
+              transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
+              onClick={(e) => e.stopPropagation()}>
+              <MemoryPanel personaId={activeId} personaName={active?.name} onClose={() => setMemoryOpen(false)} />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
