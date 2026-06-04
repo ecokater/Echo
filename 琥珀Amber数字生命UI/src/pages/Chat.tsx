@@ -6,15 +6,20 @@ import {
   Settings, Search, Menu, MessageCircle, Compass, User as UserIcon,
   Heart, Activity, Gauge, ChevronRight, X, Gem, Zap, PanelRightClose,
   PanelRightOpen, Cpu, LogOut, Wallet, ReceiptText, Info,
-  ShieldCheck, History, Headphones, FileText,
+  ShieldCheck, History, Headphones, FileText, Ticket,
 } from "lucide-react";
 import { getBalance, getLedger, type LedgerEntry } from "@/api/wallet";
 import { listOrders, type BillingOrder } from "@/api/billing";
 import { getUsageEvents, type UsageEvent } from "@/api/system";
+import { redeemCode, type RedeemResult } from "@/api/redeem";
 import { personaStore, messageStore, corpusStore } from "@/lib/localdb";
 import { inferenceApi, modelFromSettings } from "@/api/inference";
 import { buildContext } from "@/lib/localRag";
 import { annealAll, maybeAutoOrganize } from "@/lib/janitor";
+import { isClean } from "@/lib/moderation";
+import { useI18n } from "@/lib/i18n";
+
+type TFn = (key: string, vars?: Record<string, string | number>) => string;
 import type { LocalPersona, LocalMessage } from "@/types/skill";
 import { useAuthStore } from "@/stores/auth";
 import { colorFromName } from "@/lib/avatar";
@@ -151,6 +156,7 @@ function PlusMenu({ open, onClose, onImport }: { open: boolean; onClose: () => v
 }
 
 function FragmentModal({ open, onClose, onRecharge }: { open: boolean; onClose: () => void; onRecharge: () => void }) {
+  const { t } = useI18n();
   return (
     <AnimatePresence>
       {open && (
@@ -170,11 +176,11 @@ function FragmentModal({ open, onClose, onRecharge }: { open: boolean; onClose: 
             transition={{ type: "spring", stiffness: 430, damping: 34, mass: 0.82 }}
           >
             <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl fragment-glow"><Gem size={26} /></div>
-            <h3 className="text-lg font-semibold">记忆碎片即将耗尽</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">收集更多碎片，让琥珀继续编织你们的记忆。补充不打断当下的对话。</p>
+            <h3 className="text-lg font-semibold">{t("chat.frag.title")}</h3>
+            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{t("chat.frag.desc")}</p>
             <button onClick={onRecharge}
-              className="mt-5 w-full rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">补充记忆碎片</button>
-            <button onClick={onClose} className="mt-2 w-full rounded-2xl py-2.5 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">稍后再说</button>
+              className="mt-5 w-full rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">{t("chat.frag.recharge")}</button>
+            <button onClick={onClose} className="mt-2 w-full rounded-2xl py-2.5 text-sm text-muted-foreground hover:bg-muted/60 transition-colors">{t("chat.frag.later")}</button>
           </motion.div>
         </motion.div>
       )}
@@ -182,36 +188,44 @@ function FragmentModal({ open, onClose, onRecharge }: { open: boolean; onClose: 
   );
 }
 
-type MePanel = "overview" | "usage" | "orders" | "help" | "about";
+type MePanel = "overview" | "redeem" | "usage" | "orders" | "help" | "about";
 
 function formatDate(value?: string | null) {
   if (!value) return "未记录";
   return new Date(value).toLocaleString("zh-CN", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
 }
 
-function usageLabel(type: string) {
-  if (type.includes("distill")) return "分身蒸馏";
-  if (type.includes("memory")) return "记忆整理";
-  if (type.includes("chat")) return "对话推理";
-  return "推理调用";
+function usageLabel(t: TFn, type: string) {
+  if (type.includes("distill")) return t("usage.distill");
+  if (type.includes("memory")) return t("usage.memory");
+  if (type.includes("chat")) return t("usage.chat");
+  return t("usage.default");
 }
 
-function statusLabel(status: string) {
-  const labels: Record<string, string> = {
-    success: "成功",
-    client_error: "请求失败",
-    provider_error: "模型失败",
-    insufficient_balance: "余额不足",
-    pending: "待支付",
-    paid: "已完成",
-    failed: "失败",
-    refunded: "已退款",
-  };
-  return labels[status] || status;
+// status.* / ledger.* fall back to the raw token when no translation exists.
+function statusLabel(t: TFn, status: string) {
+  const v = t(`status.${status}`);
+  return v === `status.${status}` ? status : v;
+}
+
+function ledgerLabel(t: TFn, type: string) {
+  const v = t(`ledger.${type}`);
+  return v === `ledger.${type}` ? type : v;
+}
+
+function errorMessage(t: TFn, err: unknown) {
+  const maybe = err as { response?: { data?: { detail?: string }; status?: number } };
+  const detail = maybe.response?.data?.detail;
+  if (detail) return detail;
+  if (maybe.response?.status === 401) return t("redeem.err.login");
+  if (maybe.response?.status === 409) return t("redeem.err.used");
+  if (maybe.response?.status === 404) return t("redeem.err.notfound");
+  return t("redeem.err.generic");
 }
 
 export default function ChatPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const logoutFn = useAuthStore((s) => s.logout);
   const [dark, setDark] = useThemePreference(true);
@@ -230,7 +244,12 @@ export default function ChatPage() {
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [usageEvents, setUsageEvents] = useState<UsageEvent[]>([]);
   const [orders, setOrders] = useState<BillingOrder[]>([]);
+  const [redeemInput, setRedeemInput] = useState("");
+  const [redeemLoading, setRedeemLoading] = useState(false);
+  const [redeemResult, setRedeemResult] = useState<RedeemResult | null>(null);
+  const [redeemError, setRedeemError] = useState("");
   const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState("");
   const [sending, setSending] = useState(false);
   const [personas, setPersonas] = useState<LocalPersona[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -294,9 +313,30 @@ export default function ChatPage() {
   const totalUsageCost = usageEvents.reduce((sum, e) => sum + e.cost_fragments - e.refunded_fragments, 0);
   const rechargeCount = orders.filter((o) => o.status === "paid").length;
 
+  const handleRedeem = async () => {
+    const code = redeemInput.trim();
+    if (!code || redeemLoading) return;
+    setRedeemLoading(true);
+    setRedeemError("");
+    setRedeemResult(null);
+    try {
+      const result = await redeemCode(code);
+      setRedeemResult(result);
+      setRedeemInput("");
+      setFragments(result.balance);
+      getLedger(20).then(setLedger).catch(() => {});
+    } catch (err) {
+      setRedeemError(errorMessage(t, err));
+    } finally {
+      setRedeemLoading(false);
+    }
+  };
+
   const handleSend = async () => {
     const text = input.trim();
     if (!text || !activeId || sending || !active) return;
+    if (!isClean(text)) { setSendError("内容包含敏感词，请修改后再试"); return; }
+    setSendError("");
     setInput("");
     setSending(true);
     // 1. persist + render user message locally
@@ -334,7 +374,7 @@ export default function ChatPage() {
       void maybeAutoOrganize(activeId, active.name);
     } catch (e: any) {
       if (e?.response?.status === 402) setFragModal(true);
-      else setMessages((prev) => [...prev, { id: `err-${Date.now()}`, role: "amber", text: "连接异常，请稍后再试。", time: "" }]);
+      else setMessages((prev) => [...prev, { id: `err-${Date.now()}`, role: "amber", text: t("chat.err.network"), time: "" }]);
     } finally {
       setSending(false);
     }
@@ -346,24 +386,24 @@ export default function ChatPage() {
     <aside className="flex h-full w-[280px] shrink-0 flex-col gap-3 p-3">
       <div className="flex items-center gap-2.5 px-2 py-1.5">
         <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-fragment to-accent text-fragment-foreground shadow-sm"><Sparkles size={18} /></div>
-        <div><p className="text-sm font-semibold leading-none">琥珀 Amber</p><p className="mt-0.5 text-[10px] text-muted-foreground">数字生命 · 在线</p></div>
+        <div><p className="text-sm font-semibold leading-none">回声 Echo</p><p className="mt-0.5 text-[10px] text-muted-foreground">{t("side.online")}</p></div>
       </div>
       <div className="flex items-center gap-2 rounded-xl glass px-3 py-2">
         <Search size={15} className="text-muted-foreground" />
-        <input placeholder="搜索分身 / 记忆" className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
+        <input placeholder={t("side.search")} className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground" />
       </div>
       <div className="flex-1 space-y-1 overflow-y-auto pr-1">
         <div className="flex items-center justify-between px-2 pb-1 pt-2">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">我的分身</p>
-          <button onClick={() => navigate("/create")} title="创建分身"
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">{t("side.mine")}</p>
+          <button onClick={() => navigate("/create")} title={t("create.title")}
             className="flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] text-accent hover:bg-accent/15 transition-colors">
-            <Plus size={12} /> 蒸馏
+            <Plus size={12} /> {t("side.distill")}
           </button>
         </div>
         {personas.length === 0 && (
           <button onClick={() => navigate("/create")}
             className="mx-1 my-1 w-[calc(100%-0.5rem)] rounded-xl border border-dashed border-border/60 px-3 py-3 text-xs text-muted-foreground hover:border-accent/50 hover:text-accent transition-colors">
-            暂无分身 · 点此蒸馏第一个
+            {t("side.empty")}
           </button>
         )}
         {personas.map((p) => (
@@ -373,9 +413,9 @@ export default function ChatPage() {
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between">
                 <span className="truncate text-sm font-medium">{p.name}</span>
-                <span className="ml-2 shrink-0 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] text-accent">{p.relationship_desc || "分身"}</span>
+                <span className="ml-2 shrink-0 rounded-full bg-accent/15 px-1.5 py-0.5 text-[9px] text-accent">{p.relationship_desc || t("side.persona")}</span>
               </div>
-              <span className="block truncate text-xs text-muted-foreground">{p.impression || "就绪…"}</span>
+              <span className="block truncate text-xs text-muted-foreground">{p.impression || t("side.ready")}</span>
             </div>
           </button>
         ))}
@@ -383,21 +423,21 @@ export default function ChatPage() {
       <div className="flex gap-2">
         <button onClick={() => setExploreOpen(true)}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.02]">
-          <Compass size={16} className="text-accent" /> 探索
+          <Compass size={16} className="text-accent" /> {t("nav.explore")}
         </button>
         <button onClick={() => setMemoryOpen(true)}
           className="flex flex-1 items-center justify-center gap-1.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.02]">
-          <Brain size={16} className="text-accent" /> 记忆库
+          <Brain size={16} className="text-accent" /> {t("nav.memory")}
         </button>
       </div>
       <button onClick={() => navigate("/recharge")}
         className="flex items-center gap-2.5 rounded-xl glass px-3 py-2.5 text-sm transition-transform hover:scale-[1.01]">
-        <Gem size={16} className="text-fragment" /><span className="flex-1 text-left">碎片收集 / 补充</span>
+        <Gem size={16} className="text-fragment" /><span className="flex-1 text-left">{t("side.recharge")}</span>
         <span className="font-mono text-xs text-fragment">{fragments}</span>
       </button>
       <button onClick={async () => { const { clearAllLocal } = await import("@/lib/localdb"); await clearAllLocal(); logoutFn(); navigate("/login"); }}
         className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 transition-colors">
-        <LogOut size={16} /> 退出登录
+        <LogOut size={16} /> {t("side.logout")}
       </button>
     </aside>
   );
@@ -405,24 +445,24 @@ export default function ChatPage() {
   const Console = (
     <aside className="flex h-full w-[320px] shrink-0 flex-col gap-3 overflow-y-auto p-3">
       <div className="flex items-center justify-between px-1">
-        <h3 className="flex items-center gap-2 text-sm font-semibold"><Cpu size={15} className="text-accent" /> 数字生命控制台</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold"><Cpu size={15} className="text-accent" /> {t("console.title")}</h3>
       </div>
       <div className="rounded-2xl glass p-4">
-        <p className="mb-3 text-xs font-medium text-muted-foreground">情绪状态机</p>
+        <p className="mb-3 text-xs font-medium text-muted-foreground">{t("console.mood")}</p>
         <div className="mb-4 flex items-center gap-3">
           {active ? <PersonaAvatar name={active.name} avatar={active.avatar} size={48} />
             : <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-accent to-primary text-primary-foreground bubble-amber-rim"><Heart size={20} /></div>}
-          <div><p className="text-sm font-semibold">{active?.name ?? "未选择"} · 依恋</p><p className="text-[11px] text-muted-foreground">当前主导情绪 · 稳定</p></div>
+          <div><p className="text-sm font-semibold">{active?.name ?? t("console.unselected")} · {t("console.attach")}</p><p className="text-[11px] text-muted-foreground">{t("console.dominant")}</p></div>
         </div>
         <div className="space-y-3">
-          <EmotionMeter label="愉悦度" value={active?.happiness ?? 50} hue="linear-gradient(90deg,var(--accent),var(--primary))" />
-          <EmotionMeter label="亲密度" value={active?.intimacy ?? 50} hue="linear-gradient(90deg,var(--chart-2),var(--accent))" />
-          <EmotionMeter label="好奇心" value={active?.curiosity ?? 50} hue="linear-gradient(90deg,var(--chart-3),var(--primary))" />
+          <EmotionMeter label={t("console.happiness")} value={active?.happiness ?? 50} hue="linear-gradient(90deg,var(--accent),var(--primary))" />
+          <EmotionMeter label={t("console.intimacy")} value={active?.intimacy ?? 50} hue="linear-gradient(90deg,var(--chart-2),var(--accent))" />
+          <EmotionMeter label={t("console.curiosity")} value={active?.curiosity ?? 50} hue="linear-gradient(90deg,var(--chart-3),var(--primary))" />
         </div>
       </div>
       <div className="rounded-2xl glass p-4">
-        <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Gauge size={13} /> 参数微调</p>
-        {[["回应温度", active?.response_temp ?? 70], ["主动性", active?.proactivity ?? 55], ["记忆深度", active?.memory_depth ?? 88]].map(([l, v]) => (
+        <p className="mb-3 flex items-center gap-1.5 text-xs font-medium text-muted-foreground"><Gauge size={13} /> {t("console.tune")}</p>
+        {[[t("console.temp"), active?.response_temp ?? 70], [t("console.proactivity"), active?.proactivity ?? 55], [t("console.depth"), active?.memory_depth ?? 88]].map(([l, v]) => (
           <div key={l as string} className="mb-3 last:mb-0">
             <div className="mb-1 flex justify-between text-xs"><span>{l}</span><span className="font-mono text-muted-foreground">{Math.round(v as number)}</span></div>
             <input type="range" defaultValue={v as number} className="w-full accent-[var(--accent)]" />
@@ -436,7 +476,7 @@ export default function ChatPage() {
     <header className="flex items-center justify-between gap-3 px-4 py-3">
       <div className="flex items-center gap-2.5">
         {mobile && <button onClick={() => setDrawer(true)} className="rounded-lg p-1.5 hover:bg-muted/60"><Menu size={18} /></button>}
-        <div><p className="text-sm font-semibold">琥珀 Amber</p><p className="text-[11px] text-accent">● 正在感知你的情绪</p></div>
+        <div><p className="text-sm font-semibold">回声 Echo</p><p className="text-[11px] text-accent">● {t("chat.subtitle")}</p></div>
       </div>
       <div className="flex items-center gap-2">
         <FragmentBadge value={fragments} />
@@ -451,11 +491,12 @@ export default function ChatPage() {
     <div className="flex h-full flex-1 flex-col">
       {TopNav}
       <div ref={scrollRef} className="flex-1 space-y-5 overflow-y-auto px-4 py-4 md:px-8">
-        {messages.length === 0 && <div className="grid h-full place-items-center text-sm text-muted-foreground">和 {active?.name ?? "琥珀"} 开始对话吧</div>}
+        {messages.length === 0 && <div className="grid h-full place-items-center text-sm text-muted-foreground">{t("chat.empty", { name: active?.name ?? "回声" })}</div>}
         {messages.map((m) => <Bubble key={m.id} m={m} />)}
-        {sending && <div className="text-xs text-muted-foreground pl-11">琥珀正在思考…</div>}
+        {sending && <div className="text-xs text-muted-foreground pl-11">{t("chat.thinking", { name: active?.name ?? "回声" })}</div>}
       </div>
       <div className="px-4 pb-4 md:px-8">
+        {sendError && <p className="mb-2 px-1 text-xs text-destructive">{sendError}</p>}
         <div className="relative flex items-end gap-2 rounded-2xl glass-strong p-2">
           <div className="relative">
             <button onClick={() => setPlus((p) => !p)} className="grid h-9 w-9 place-items-center rounded-xl text-accent hover:bg-accent/15 transition-colors">
@@ -463,9 +504,9 @@ export default function ChatPage() {
             </button>
             <PlusMenu open={plus} onClose={() => setPlus(false)} onImport={() => setImportOpen(true)} />
           </div>
-          <textarea rows={1} value={input} onChange={(e) => setInput(e.target.value)}
+          <textarea rows={1} value={input} onChange={(e) => { setInput(e.target.value); if (sendError) setSendError(""); }}
             onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
-            placeholder="和琥珀说点什么…" className="max-h-32 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground" />
+            placeholder={t("chat.input", { name: active?.name ?? "回声" })} className="max-h-32 flex-1 resize-none bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground" />
           <button onClick={handleSend} disabled={sending || !input.trim()}
             className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground shadow-sm transition-transform hover:scale-105 active:scale-95 disabled:opacity-40">
             <Send size={16} />
@@ -505,22 +546,22 @@ export default function ChatPage() {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <p className="truncate text-base font-semibold">{user?.nickname || "Amber 用户"}</p>
-            <p className="truncate text-xs text-muted-foreground">{user?.phone || user?.email || "已登录账号"}</p>
+            <p className="truncate text-base font-semibold">{user?.nickname || t("me.guest")}</p>
+            <p className="truncate text-xs text-muted-foreground">{user?.phone || user?.email || t("me.account")}</p>
           </div>
           <button onClick={() => setSettingsOpen(true)} className="rounded-xl p-2 hover:bg-muted/60" title="设置"><Settings size={18} /></button>
         </div>
         <div className="mt-5 grid grid-cols-3 gap-2">
           <div className="rounded-2xl glass p-3">
-            <p className="text-[10px] text-muted-foreground">碎片余额</p>
+            <p className="text-[10px] text-muted-foreground">{t("me.stat.balance")}</p>
             <p className="mt-1 font-mono text-sm font-semibold">{fragments.toLocaleString()}</p>
           </div>
           <div className="rounded-2xl glass p-3">
-            <p className="text-[10px] text-muted-foreground">本地分身</p>
+            <p className="text-[10px] text-muted-foreground">{t("me.stat.personas")}</p>
             <p className="mt-1 font-mono text-sm font-semibold">{personas.length}</p>
           </div>
           <div className="rounded-2xl glass p-3">
-            <p className="text-[10px] text-muted-foreground">已完成订单</p>
+            <p className="text-[10px] text-muted-foreground">{t("me.stat.orders")}</p>
             <p className="mt-1 font-mono text-sm font-semibold">{rechargeCount}</p>
           </div>
         </div>
@@ -529,30 +570,31 @@ export default function ChatPage() {
       <button onClick={() => navigate("/recharge")} className="flex w-full items-center gap-3 rounded-3xl fragment-glow px-5 py-4 text-left transition-transform active:scale-[0.99]">
         <Wallet size={22} />
         <span className="flex-1">
-          <span className="block text-sm font-semibold">充值活动入口</span>
-          <span className="block text-xs opacity-80">补充记忆碎片，开发测试渠道可即时到账</span>
+          <span className="block text-sm font-semibold">{t("me.recharge.title")}</span>
+          <span className="block text-xs opacity-80">{t("me.recharge.desc")}</span>
         </span>
         <ChevronRight size={18} />
       </button>
 
       <section className="space-y-2">
-        <MeRow icon={History} title="Token 消耗历史" desc="查看最近推理、退款与错误记录" value={`${usageEvents.length} 条`} onClick={() => setMePanel("usage")} />
-        <MeRow icon={ReceiptText} title="我的订单" desc="查看充值订单、支付状态与到账时间" value={`${orders.length} 单`} onClick={() => setMePanel("orders")} />
-        <MeRow icon={Headphones} title="帮助与客服" desc="常见问题、反馈方式与本机测试说明" onClick={() => setMePanel("help")} />
-        <MeRow icon={Info} title="关于 Amber" desc="版本、架构与隐私保存方式" onClick={() => setMePanel("about")} />
+        <MeRow icon={Ticket} title={t("me.row.redeem")} desc={t("me.row.redeem.desc")} onClick={() => setMePanel("redeem")} />
+        <MeRow icon={History} title={t("me.row.usage")} desc={t("me.row.usage.desc")} value={`${usageEvents.length} ${t("me.unit.count")}`} onClick={() => setMePanel("usage")} />
+        <MeRow icon={ReceiptText} title={t("me.row.orders")} desc={t("me.row.orders.desc")} value={`${orders.length} ${t("me.unit.order")}`} onClick={() => setMePanel("orders")} />
+        <MeRow icon={Headphones} title={t("me.row.help")} desc={t("me.row.help.desc")} onClick={() => setMePanel("help")} />
+        <MeRow icon={Info} title={t("me.row.about")} desc={t("me.row.about.desc")} onClick={() => setMePanel("about")} />
       </section>
 
       <section className="rounded-3xl glass-strong p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-sm font-semibold">最近钱包流水</p>
-          <span className="text-[10px] text-muted-foreground">{ledger.length} 条</span>
+          <p className="text-sm font-semibold">{t("me.ledger.title")}</p>
+          <span className="text-[10px] text-muted-foreground">{ledger.length} {t("me.unit.count")}</span>
         </div>
         {ledger.length === 0 ? (
-          <p className="py-3 text-center text-xs text-muted-foreground">暂无流水</p>
+          <p className="py-3 text-center text-xs text-muted-foreground">{t("me.ledger.empty")}</p>
         ) : ledger.slice(0, 3).map((entry) => (
           <div key={entry.id} className="flex items-center justify-between border-t border-border/40 py-2 first:border-t-0">
             <div>
-              <p className="text-xs font-medium">{entry.type}</p>
+              <p className="text-xs font-medium">{ledgerLabel(t, entry.type)}</p>
               <p className="text-[10px] text-muted-foreground">{formatDate(entry.created_at)}</p>
             </div>
             <span className={`font-mono text-xs font-semibold ${entry.delta >= 0 ? "text-accent" : "text-foreground"}`}>
@@ -564,28 +606,81 @@ export default function ChatPage() {
     </div>
   );
 
+  const RedeemPanel = (
+    <div className="space-y-4">
+      <section className="rounded-3xl fragment-glow px-5 py-5">
+        <div className="flex items-start gap-3">
+          <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-background/20"><Ticket size={22} /></span>
+          <div className="min-w-0 flex-1">
+            <p className="text-base font-semibold">{t("redeem.title")}</p>
+            <p className="mt-1 text-xs leading-relaxed opacity-80">{t("redeem.desc")}</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl glass-strong p-4">
+        <label className="text-xs font-medium text-muted-foreground">{t("redeem.label")}</label>
+        <input
+          value={redeemInput}
+          onChange={(e) => {
+            setRedeemInput(e.target.value.toUpperCase());
+            if (redeemError) setRedeemError("");
+          }}
+          onKeyDown={(e) => { if (e.key === "Enter") handleRedeem(); }}
+          placeholder={t("redeem.placeholder")}
+          className="mt-2 w-full rounded-2xl border border-border/70 bg-background/70 px-4 py-3 font-mono text-sm outline-none transition-colors focus:border-accent"
+          autoCapitalize="characters"
+          autoCorrect="off"
+        />
+        {redeemError && <p className="mt-3 rounded-2xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{redeemError}</p>}
+        {redeemResult && (
+          <div className="mt-3 rounded-2xl bg-accent/10 px-3 py-3 text-sm text-accent">
+            <p className="font-semibold">{t("redeem.ok", { n: redeemResult.fragments.toLocaleString() })}</p>
+            <p className="mt-1 text-xs opacity-80">{t("redeem.balance", { n: redeemResult.balance.toLocaleString() })} · {formatDate(redeemResult.redeemed_at)}</p>
+          </div>
+        )}
+        <button
+          onClick={handleRedeem}
+          disabled={!redeemInput.trim() || redeemLoading}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {redeemLoading ? t("redeem.submitting") : t("redeem.submit")}
+        </button>
+      </section>
+
+      <section className="rounded-3xl glass p-4">
+        <p className="text-sm font-medium">{t("redeem.note.title")}</p>
+        <div className="mt-3 space-y-2 text-xs leading-relaxed text-muted-foreground">
+          <p>{t("redeem.note1")}</p>
+          <p>{t("redeem.note2")}</p>
+          <p>{t("redeem.note3")}</p>
+        </div>
+      </section>
+    </div>
+  );
+
   const UsagePanel = (
     <div className="space-y-3">
       <div className="rounded-3xl glass-strong p-4">
-        <p className="text-xs text-muted-foreground">近 20 次净消耗</p>
-        <p className="mt-1 font-mono text-2xl font-semibold">{totalUsageCost.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">碎片</span></p>
+        <p className="text-xs text-muted-foreground">{t("usage.net")}</p>
+        <p className="mt-1 font-mono text-2xl font-semibold">{totalUsageCost.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">{t("usage.unit")}</span></p>
       </div>
       {usageEvents.length === 0 ? (
-        <div className="rounded-2xl glass p-5 text-center text-sm text-muted-foreground">暂无推理消耗记录</div>
+        <div className="rounded-2xl glass p-5 text-center text-sm text-muted-foreground">{t("usage.empty")}</div>
       ) : usageEvents.map((event) => (
         <div key={event.id} className="rounded-2xl glass p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">{usageLabel(event.event_type)}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{event.model_id || "默认模型"} · {formatDate(event.created_at)}</p>
+              <p className="text-sm font-medium">{usageLabel(t, event.event_type)}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{event.model_id || t("usage.default_model")} · {formatDate(event.created_at)}</p>
             </div>
             <span className={`rounded-full px-2 py-1 text-[10px] ${event.status === "success" ? "bg-accent/15 text-accent" : "bg-destructive/15 text-destructive"}`}>
-              {statusLabel(event.status)}
+              {statusLabel(t, event.status)}
             </span>
           </div>
           <div className="mt-3 grid grid-cols-3 gap-2 text-xs">
-            <span className="rounded-xl bg-muted/60 px-2 py-1">消耗 {event.cost_fragments}</span>
-            <span className="rounded-xl bg-muted/60 px-2 py-1">退款 {event.refunded_fragments}</span>
+            <span className="rounded-xl bg-muted/60 px-2 py-1">{t("usage.cost", { n: event.cost_fragments })}</span>
+            <span className="rounded-xl bg-muted/60 px-2 py-1">{t("usage.refund", { n: event.refunded_fragments })}</span>
             <span className="rounded-xl bg-muted/60 px-2 py-1">{event.latency_ms}ms</span>
           </div>
           {event.error_code && <p className="mt-2 text-xs text-destructive">{event.error_code}</p>}
@@ -597,20 +692,20 @@ export default function ChatPage() {
   const OrdersPanel = (
     <div className="space-y-3">
       {orders.length === 0 ? (
-        <div className="rounded-2xl glass p-5 text-center text-sm text-muted-foreground">暂无订单，先去补充记忆碎片吧</div>
+        <div className="rounded-2xl glass p-5 text-center text-sm text-muted-foreground">{t("orders.empty")}</div>
       ) : orders.map((order) => (
         <div key={order.order_id} className="rounded-2xl glass p-4">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <p className="text-sm font-medium">记忆碎片 ×{order.fragments.toLocaleString()}</p>
+              <p className="text-sm font-medium">{t("orders.frag", { n: order.fragments.toLocaleString() })}</p>
               <p className="mt-1 text-xs text-muted-foreground">{order.amount_display} · {order.channel}</p>
             </div>
             <span className={`rounded-full px-2 py-1 text-[10px] ${order.status === "paid" ? "bg-accent/15 text-accent" : "bg-muted text-muted-foreground"}`}>
-              {statusLabel(order.status)}
+              {statusLabel(t, order.status)}
             </span>
           </div>
           <p className="mt-3 truncate font-mono text-[10px] text-muted-foreground">{order.out_trade_no}</p>
-          <p className="mt-1 text-[10px] text-muted-foreground">创建 {formatDate(order.created_at)} · 支付 {formatDate(order.paid_at)}</p>
+          <p className="mt-1 text-[10px] text-muted-foreground">{t("orders.created", { t: formatDate(order.created_at) })} · {t("orders.paid", { t: formatDate(order.paid_at) })}</p>
         </div>
       ))}
     </div>
@@ -619,9 +714,9 @@ export default function ChatPage() {
   const HelpPanel = (
     <div className="space-y-3">
       {[
-        ["为什么聊天失败？", "先确认后端服务正在运行；Android debug 包默认连接 http://10.0.2.2:8000。"],
-        ["记忆和聊天保存在哪里？", "人格、聊天记录和记忆保存在本地；服务端只处理登录、扣费、推理和审计元数据。"],
-        ["如何联系客服？", "当前测试阶段可在项目反馈通道提交问题，正式上架前会接入在线客服与工单系统。"],
+        [t("help.q1"), t("help.a1")],
+        [t("help.q2"), t("help.a2")],
+        [t("help.q3"), t("help.a3")],
       ].map(([title, desc]) => (
         <div key={title} className="rounded-2xl glass p-4">
           <p className="text-sm font-medium">{title}</p>
@@ -635,16 +730,16 @@ export default function ChatPage() {
     <div className="space-y-3">
       <div className="rounded-3xl glass-strong p-5 text-center">
         <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-fragment to-accent text-fragment-foreground"><Sparkles size={26} /></div>
-        <p className="mt-3 text-base font-semibold">琥珀 Amber</p>
-        <p className="mt-1 text-xs text-muted-foreground">数字生命 · Local-first 测试版</p>
+        <p className="mt-3 text-base font-semibold">回声 Echo</p>
+        <p className="mt-1 text-xs text-muted-foreground">{t("about.tagline")}</p>
       </div>
       <div className="rounded-2xl glass p-4">
-        <p className="flex items-center gap-2 text-sm font-medium"><ShieldCheck size={16} className="text-accent" /> 隐私架构</p>
-        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">聊天全文、人格和记忆默认保存在用户本地。服务端只保存账号、钱包、订单、推理消耗和错误元数据。</p>
+        <p className="flex items-center gap-2 text-sm font-medium"><ShieldCheck size={16} className="text-accent" /> {t("about.privacy")}</p>
+        <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{t("about.privacy.desc")}</p>
       </div>
       <div className="rounded-2xl glass p-4">
-        <p className="text-sm font-medium">版本信息</p>
-        <p className="mt-2 text-xs text-muted-foreground">Android debug · Vite React · Capacitor</p>
+        <p className="text-sm font-medium">{t("about.version")}</p>
+        <p className="mt-2 text-xs text-muted-foreground">{t("about.version.desc")}</p>
       </div>
     </div>
   );
@@ -654,7 +749,7 @@ export default function ChatPage() {
       <header className="flex shrink-0 items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
           {mePanel !== "overview" && <button onClick={() => setMePanel("overview")} className="rounded-lg p-1.5 hover:bg-muted/60"><ChevronRight size={18} className="rotate-180" /></button>}
-          <div><p className="text-sm font-semibold">{mePanel === "overview" ? "我的" : mePanel === "usage" ? "Token 消耗历史" : mePanel === "orders" ? "我的订单" : mePanel === "help" ? "帮助与客服" : "关于 Amber"}</p><p className="text-[11px] text-muted-foreground">账户与服务中心</p></div>
+          <div><p className="text-sm font-semibold">{mePanel === "overview" ? t("nav.me") : mePanel === "redeem" ? t("me.row.redeem") : mePanel === "usage" ? t("me.row.usage") : mePanel === "orders" ? t("me.row.orders") : mePanel === "help" ? t("me.row.help") : t("me.row.about")}</p><p className="text-[11px] text-muted-foreground">{t("me.subtitle")}</p></div>
         </div>
         <button onClick={() => setDark((d) => !d)} className="rounded-lg p-2 hover:bg-muted/60 transition-colors" title="明暗切换">{dark ? <Sun size={16} /> : <Moon size={16} />}</button>
       </header>
@@ -668,6 +763,7 @@ export default function ChatPage() {
             transition={{ type: "spring", stiffness: 430, damping: 38, mass: 0.85 }}
           >
             {mePanel === "overview" && MeOverview}
+            {mePanel === "redeem" && RedeemPanel}
             {mePanel === "usage" && UsagePanel}
             {mePanel === "orders" && OrdersPanel}
             {mePanel === "help" && HelpPanel}
@@ -679,8 +775,8 @@ export default function ChatPage() {
   );
 
   const TABS = [
-    { id: "chat", icon: MessageCircle, label: "对话" }, { id: "explore", icon: Compass, label: "探索" },
-    { id: "memory", icon: Brain, label: "记忆" }, { id: "me", icon: UserIcon, label: "我的" },
+    { id: "chat", icon: MessageCircle, label: t("nav.chat") }, { id: "explore", icon: Compass, label: t("nav.explore") },
+    { id: "memory", icon: Brain, label: t("nav.memory") }, { id: "me", icon: UserIcon, label: t("nav.me") },
   ];
   const BottomTabs = (
     <nav className="flex shrink-0 items-center justify-around glass-strong px-2 py-2">

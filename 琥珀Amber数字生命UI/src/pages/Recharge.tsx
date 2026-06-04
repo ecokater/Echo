@@ -4,15 +4,13 @@ import { ArrowLeft, Gem, Check, Loader2 } from "lucide-react";
 import { listSkus, createOrder, settleDev, type Sku } from "@/api/billing";
 import { getBalance } from "@/api/wallet";
 import { useApplySavedTheme } from "@/lib/theme";
+import { useI18n } from "@/lib/i18n";
 
-const CHANNELS = [
-  { id: "wechat", label: "微信支付" },
-  { id: "alipay", label: "支付宝" },
-  { id: "dev", label: "开发测试（即时到账）" },
-];
+const CHANNELS = [{ id: "wechat" }, { id: "alipay" }, { id: "dev" }];
 
 export default function RechargePage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [skus, setSkus] = useState<Sku[]>([]);
   const [balance, setBalance] = useState(0);
   const [selected, setSelected] = useState<string | null>(null);
@@ -36,12 +34,12 @@ export default function RechargePage() {
       if (channel === "dev") {
         const res = await settleDev(order.out_trade_no);
         setBalance(res.balance);
-        setToast(`充值成功！+${order.fragments} 碎片`);
+        setToast(t("recharge.ok", { n: order.fragments }));
       } else {
-        setToast("该支付渠道需配置商户号，当前为骨架。请用「开发测试」验证闭环。");
+        setToast(t("recharge.skeleton"));
       }
     } catch (e: any) {
-      setToast(e?.response?.data?.detail || "下单失败");
+      setToast(e?.response?.data?.detail || t("recharge.order_failed"));
     } finally {
       setBusy(false);
     }
@@ -54,7 +52,7 @@ export default function RechargePage() {
       <div className="mx-auto max-w-md p-5">
         <div className="mb-5 flex items-center gap-3">
           <button onClick={() => navigate("/")} className="rounded-lg p-1.5 hover:bg-muted/60"><ArrowLeft size={18} /></button>
-          <h1 className="text-base font-semibold">补充记忆碎片</h1>
+          <h1 className="text-base font-semibold">{t("recharge.title")}</h1>
           <div className="ml-auto flex items-center gap-1.5 rounded-full px-2.5 py-1 fragment-glow">
             <Gem size={13} /><span className="font-mono text-xs font-semibold">{balance.toLocaleString()}</span>
           </div>
@@ -72,7 +70,7 @@ export default function RechargePage() {
           ))}
         </div>
 
-        <p className="mb-2 mt-6 text-xs font-medium text-muted-foreground">支付方式</p>
+        <p className="mb-2 mt-6 text-xs font-medium text-muted-foreground">{t("recharge.method")}</p>
         <div className="space-y-2">
           {CHANNELS.map((c) => (
             <button key={c.id} onClick={() => setChannel(c.id)}
@@ -80,7 +78,7 @@ export default function RechargePage() {
               <span className={`grid h-4 w-4 place-items-center rounded-full border ${channel === c.id ? "border-accent" : "border-muted-foreground/40"}`}>
                 {channel === c.id && <span className="h-2 w-2 rounded-full bg-accent" />}
               </span>
-              {c.label}
+              {t(`recharge.ch.${c.id}`)}
             </button>
           ))}
         </div>
@@ -89,11 +87,11 @@ export default function RechargePage() {
 
         <button onClick={pay} disabled={busy || !selected}
           className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-          {busy && <Loader2 size={16} className="animate-spin" />}{busy ? "处理中…" : "确认充值"}
+          {busy && <Loader2 size={16} className="animate-spin" />}{busy ? t("common.processing") : t("recharge.confirm")}
         </button>
 
         <p className="mt-4 text-center text-[10px] leading-relaxed text-muted-foreground">
-          记忆碎片为虚拟商品，用于解锁与琥珀的深度互动，购买后不支持退款。<br />iOS 端将通过 App Store 内购充值。
+          {t("recharge.disclaimer")}<br />{t("recharge.ios")}
         </p>
       </div>
     </div>

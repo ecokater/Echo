@@ -3,9 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { Sparkles, Gem } from "lucide-react";
 import { useAuthStore } from "@/stores/auth";
 import { useApplySavedTheme } from "@/lib/theme";
+import { useI18n } from "@/lib/i18n";
 
 export default function LoginPage() {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { login, register, loading, user } = useAuthStore();
   const [mode, setMode] = useState<"login" | "register">("login");
   const [phone, setPhone] = useState("");
@@ -21,14 +23,14 @@ export default function LoginPage() {
 
   const submit = async () => {
     setError("");
-    if (!/^\d{6,}$/.test(phone)) { setError("请输入有效手机号"); return; }
-    if (password.length < 6) { setError("密码至少 6 位"); return; }
+    if (!/^\d{6,}$/.test(phone)) { setError(t("login.err.phone")); return; }
+    if (password.length < 6) { setError(t("login.err.password")); return; }
     try {
       if (mode === "login") await login(phone, password);
       else await register(phone, password, nickname || undefined);
       navigate("/", { replace: true });
     } catch (e: any) {
-      setError(e?.response?.data?.detail || "操作失败，请重试");
+      setError(e?.response?.data?.detail || t("common.retry_failed"));
     }
   };
 
@@ -42,19 +44,19 @@ export default function LoginPage() {
             <Sparkles size={26} />
           </div>
           <div className="text-center">
-            <h1 className="text-xl font-semibold">琥珀 Amber</h1>
-            <p className="mt-1 text-xs text-muted-foreground">{mode === "login" ? "唤醒你的数字生命" : "创建你的数字生命"}</p>
+            <h1 className="text-xl font-semibold">{t("brand")}</h1>
+            <p className="mt-1 text-xs text-muted-foreground">{t(mode === "login" ? "login.tagline.login" : "login.tagline.register")}</p>
           </div>
         </div>
 
         <div className="space-y-3">
-          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="手机号"
+          <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t("login.phone")}
             className="w-full rounded-xl glass px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" />
-          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="密码（至少 6 位）"
+          <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder={t("login.password")}
             onKeyDown={(e) => e.key === "Enter" && submit()}
             className="w-full rounded-xl glass px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" />
           {mode === "register" && (
-            <input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder="昵称（可选）"
+            <input value={nickname} onChange={(e) => setNickname(e.target.value)} placeholder={t("login.nickname")}
               className="w-full rounded-xl glass px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" />
           )}
         </div>
@@ -63,18 +65,18 @@ export default function LoginPage() {
 
         {mode === "register" && (
           <div className="mt-4 flex items-center justify-center gap-1.5 text-xs text-fragment">
-            <Gem size={12} /> 注册即赠 100 记忆碎片
+            <Gem size={12} /> {t("login.gift")}
           </div>
         )}
 
         <button onClick={submit} disabled={loading}
           className="mt-5 w-full rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
-          {loading ? "处理中…" : mode === "login" ? "登录" : "注册并进入"}
+          {loading ? t("common.processing") : t(mode === "login" ? "login.submit.login" : "login.submit.register")}
         </button>
 
         <button onClick={() => { setMode(mode === "login" ? "register" : "login"); setError(""); }}
           className="mt-3 w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors">
-          {mode === "login" ? "还没有账号？立即注册" : "已有账号？返回登录"}
+          {t(mode === "login" ? "login.switch.toRegister" : "login.switch.toLogin")}
         </button>
       </div>
     </div>

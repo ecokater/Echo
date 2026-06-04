@@ -38,6 +38,35 @@ def _resolve_llm(model, platform: dict | None = None):
     return api_key, base_url, model_id
 
 
+def _loads_json_loose(raw: str) -> dict:
+    """Parse model JSON output that may be wrapped in markdown fences or
+    prefixed/suffixed with reasoning text (common with reasoning-tuned models
+    even under response_format=json_object).
+
+    Returns {} when no JSON object is recoverable, so callers degrade to
+    deterministic defaults instead of throwing (which would trigger a spurious
+    consume→refund churn and a 502 to the client).
+    """
+    if not raw:
+        return {}
+    s = raw.strip()
+    if s.startswith("```"):
+        s = re.sub(r"^```[a-zA-Z]*\s*", "", s)
+        s = re.sub(r"\s*```$", "", s).strip()
+    try:
+        return json.loads(s)
+    except Exception:
+        pass
+    # Fallback: extract the outermost {...} block from surrounding prose.
+    m = re.search(r"\{.*\}", s, re.DOTALL)
+    if m:
+        try:
+            return json.loads(m.group(0))
+        except Exception:
+            return {}
+    return {}
+
+
 def _usage_from(resp, cost_fragments=0) -> Usage:
     u = getattr(resp, "usage", None)
     return Usage(
@@ -175,7 +204,7 @@ async def run_distill(req: InferenceDistillRequest, cost_fragments: int, platfor
         messages=[{"role": "system", "content": system_prompt}],
         temperature=0.7, response_format={"type": "json_object"},
     )
-    result = json.loads(resp.choices[0].message.content.strip())
+    result = _loads_json_loose(resp.choices[0].message.content or "")
 
     def norm(v, fb):
         try:
@@ -185,7 +214,7 @@ async def run_distill(req: InferenceDistillRequest, cost_fragments: int, platfor
             return fb
 
     return InferenceDistillResponse(
-        core_memory=result.get("core_memory", req.core_memory),
+        core_memory=result.get("core_memory") or req.core_memory,
         stability=norm(result.get("stability"), 85),
         synchronization=norm(result.get("synchronization"), 90),
         refined_traits=[new_trait], usage=_usage_from(resp, cost_fragments),

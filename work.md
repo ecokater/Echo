@@ -23,7 +23,7 @@
 ## 当前协作状态
 
 - Claude 正在前端批量任务：REQ-002/003/004/009 前端/011，见 `working.md` 锁定文件。
-- Codex 当前没有代码锁；刚完成 REQ-015 后端/后台兑换码与日志精简。
+- Codex 当前没有代码锁；刚完成 REQ-015 前端兑换码入口。
 - 不要碰 Claude 锁定的 `Chat.tsx`、`CreatePersona.tsx`、`src/components/*`、`src/lib/janitor.ts`、`src/lib/localdb.ts`、`src/api/explore.ts`，除非用户明确要求协调同一区域。
 
 ---
@@ -75,11 +75,71 @@ server test: `http://129.204.151.118`
 | REQ-012 硅基流动平台模型 | 前后端完成并部署；默认 `deepseek-ai/DeepSeek-V4-Pro` | 在后台或 `.env` 配 `PLATFORM_API_KEY` 后真实聊天验收 |
 | REQ-013 固定管理员令牌 | 已部署 | 令牌泄露时轮换 |
 | REQ-014 微信/支付宝支付 | 未做，P3 | 需要商户资质/回调域名/合规材料后再接 |
-| REQ-015 兑换码 | 后端/API/后台已完成并部署；前端入口待接 | 等 Claude 释放前端锁后做“我的-激活兑换码” |
+| REQ-015 兑换码 | 前后端完成，后台生成 + 用户兑换 + Android debug 已更新 | 登录后用后台生成的真实兑换码做一次人工验收 |
+| REQ-016 改名 Echo | ✅ 全量(后端可见文本 + 前端品牌 + Android appId `com.echo.app`/包名/app_name)；保留内部存储键/库名/CSS类/类型名 | ✅ 后端已部署(线上标题=Echo Engine API)+ APK 已重建；CSS 设计注释等不可见文本未改 |
+| REQ-017 多语言 | ✅ 全量页面+三覆盖层面板中英化（含钱包流水/用量/状态标签翻译、输入框占位符用分身名） | 仅余 PlusMenu 占位项/气泡小标签/日期格式等极少非关键串 |
+| REQ-018 预设人格 | ✅ 5 个预设 + 创建页一键填充 | 可按需增减预设或加预设头像 |
+| REQ-019 敏感词 | ✅ 前端拦发送/创建 + 后端扣费前校验，**线上闭环已验证**(400+零扣费) | 投放维护版词库或接内容安全 API 提升合规强度 |
 
 ---
 
 ## 近期关键记录
+
+### 2026-06-04 · Claude · 后端部署(改名 + 敏感词 + distill 修复)上线
+
+- 已部署:经本机 `scp`(部署密钥 `amber_deploy_ed25519`)上传 6 个改动文件到 `/home/ubuntu/Echo/Amber/amber-engine`(`main.py`、`routers/admin.py`、`routers/inference.py`、`services/inference_service.py`、`services/moderation_service.py`、`data/sensitive_words.txt`),`cd deploy && docker compose up -d --build backend`。
+- 验证:`deploy-backend-1` Up(healthy)、`/api/health` 200、`/openapi.json` 标题=`Echo Engine API`、`inference/distill` 路由存在;moderation_service 成功 import(容器健康即证)。
+- 含义:REQ-016 后端改名、REQ-019 敏感词后端扣费前校验、distill 误退款修复(`_loads_json_loose`)三项**线上生效**。
+- 线上验证补充:`GET /api/admin/pricing` 确认 `api_key_set=True`、模型 `deepseek-ai/DeepSeek-V4-Pro`、单价 1/20/5 —— **平台 key 已配,真实出字可用**。REQ-019 真机闭环:注册临时号→发「赌博」敏感内容→`HTTP 400 内容包含敏感词，已拦截`→余额 100 未变(扣费前拦截零扣费)→删号清理,**线上生效已证**。
+- 还差什么:前端新 APK/Web/Electron 各端重建分发;Android release/HTTPS 上架前置;REQ-014 真实支付(P3 外部阻塞)。
+- 备注:`scp`/`ssh` 部署须用户在权限侧放行(agent 不自授);本批由用户授权后执行。
+
+### 2026-06-04 · Claude · REQ-017 收尾(三覆盖层面板) + 占位符 + 弃用 amber.app
+
+- **三大覆盖层面板 i18n**:`MemoryPanel`/`ExplorePanel`/`ChatImportModal` 全量走 `t()`(含 confirm/flash/toast/空态/按钮),i18n 字典扩到 ~190 键(新增 mem.*/exp.*/imp.* + common.loading/pick_persona)。REQ-017 视为完成(仅余 PlusMenu 占位项/气泡小标签/日期格式等非关键串)。
+- **聊天输入框占位符**:`chat.input` 改为带 `{name}`,渲染 `和{active.name}说点什么…`(EN: `Say something to {name}…`)。
+- **弃用旧包**:`adb uninstall com.amber.app` 成功,设备仅剩 `com.echo.app`;新 debug APK(指向服务器)重建并安装,启动验证占位符显示「和girl friend说点什么」。
+- 验证:`tsc` + `vite build`(android:build 内含)通过;APK 启动截图通过。
+
+### 2026-06-04 · Claude · 钱包流水翻译 + REQ-017 深层迁移 + 新 APK
+
+- **钱包流水翻译(用户明确诉求)**:`entry.type` 原样显示 `consume_chat/refund_distill/...`,现经 `ledgerLabel(t,type)` 翻译为「对话消耗/蒸馏退款/记忆结晶/赠送福利」等(中英);同理用量 `usageLabel`、状态 `statusLabel` 也 i18n 化(`status.*` 未知值回退原 token)。
+- **REQ-017 深层迁移**:i18n 字典扩到 ~120 键;`Chat.tsx` 全量(顶栏/侧栏/控制台/底部 tab/FragmentModal/我的总览 + 兑换码/用量/订单/帮助/关于面板)、`Recharge.tsx`(渠道/方式/toast/文案)、`CreatePersona.tsx`(标题/字段/性格/导入/按钮/校验)、`App.tsx` 启动页 全部走 `t()`。`usageLabel/statusLabel/ledgerLabel/errorMessage` 改为接收 `t`。
+- **新 APK**:`com.echo.app` debug(指向 `http://129.204.151.118`)`assembleDebug` 成功(Java 因包名重编译);安装到 `emulator-5554`,`com.echo.app/.MainActivity` 启动,登录页显示「回声 Echo」+「唤醒你的数字生命」(i18n 生效)。
+- 验证:`tsc --noEmit` + `vite build`(419KB) + APK 启动截图通过。
+- 还差什么:覆盖层组件 `MemoryPanel`/`ExplorePanel`/`ChatImportModal` 与 PlusMenu/气泡小标签仍中文待迁移;**后端(改名+敏感词+distill 修复)仍需经 SSH 通道重新部署**;旧 `com.amber.app` 与新 `com.echo.app` 是两个独立包(本地数据不共享)。
+
+### 2026-06-03 · Claude · REQ-016/017/018/019 新批次
+
+- **REQ-016 全量改名**:后端用户可见文本(FastAPI 标题 `Echo Engine API`、启动日志、管理后台 `<title>/<h1>`)→ 回声/Echo;前端品牌(Login/Chat/Recharge「琥珀 Amber」→「回声 Echo」、默认陪伴名「琥珀」→「回声」);Android `capacitor.config.ts` appId `com.amber.app`→`com.echo.app` + appName、`build.gradle` namespace/applicationId、`strings.xml` app_name/包名/url_scheme、`MainActivity.java` 迁至 `com/echo/app`(旧 `com/amber` 已删)。**保留**:`amber_*` localStorage 键、IndexedDB `amber-local` 库名、CSS `bubble-amber-rim`、`AmberUser/AmberDB` 类型名、`role:"amber"` 消息类型字面量(改则丢用户本地数据或大范围联动)。
+- **REQ-017 i18n MVP**:新增 `lib/i18n.ts`(zh/en 字典 + `useI18n`/`translate`,缺失键回退中文)、`stores/locale.ts`(zustand,持久化 `echo_locale`);`SettingsModal` 内加「中文/English」切换;覆盖 Login 全量 + Settings + 品牌/底部导航键。剩余:Chat 深层文案/Recharge/Create 渐进迁移。
+- **REQ-018 预设人格**:新增 `lib/presets.ts`(5 个预设含阈值+核心记忆);`CreatePersona` 顶部「从预设开始」chips 一键填充。
+- **REQ-019 敏感词**:前端 `lib/moderation.ts`(NFKC+分隔规避+中英 SEED) 拦 聊天发送/创建分身;后端 `services/moderation_service.py` 在 `routers/inference.py` chat/distill **扣费前** `_enforce_moderation`,命中记 `status=blocked`(0 扣费)+ HTTP 400;词库可经 `data/sensitive_words.txt`/`SENSITIVE_WORDS_EXTRA` 热扩展。
+- 验证:后端 `compileall` + `main import`(title=Echo Engine API)+ 审核 6 类单测 PASS;前端 `tsc --noEmit` + `vite build`(419KB)通过。
+- 还差什么:**后端(改名+moderation+distill 修复)需重新部署服务器**;Android 需重建 APK(appId 变了是全新安装,不与旧 `com.amber.app` 升级覆盖);REQ-017 深层文案渐进迁移。
+
+### 2026-06-03 · Claude · 修复 distill 误退款(JSONDecodeError)
+
+- 现象:钱包出现 `consume_distill -20` 紧跟 `refund_distill +20`。审计 `GET /api/admin/usage` 坐实:该 distill 事件 `status=provider_error`、`error_code=JSONDecodeError`、latency 15s。
+- 根因:`inference_service.run_distill` 用 `response_format=json_object` 但对返回值做了**无保护的 `json.loads`**;DeepSeek-V4-Pro(reasoning 取向)返回内容可能带 ```json 围栏/思维链/多余文字,解析即崩 → 通用 except 触发失败退款 + 502。chat 不解析 JSON 故照常成功(平台 key 其实已通)。
+- 已修:新增 `_loads_json_loose()`(剥代码围栏 → 直接 loads → 失败则正则抽取最外层 `{...}` → 仍失败返回 `{}`),`run_distill` 改用它并对 `core_memory` 缺省优雅降级;解析失败不再抛异常/退款,退化为确定性默认值。
+- 验证:`py_compile` OK;单测覆盖 纯/围栏/前缀/思维链/垃圾/空 六类输入全部符合预期。
+- 还差什么:**需重新部署后端**到服务器才生效(本地已改未部署)。另记一个次要 bug:审计 `provider/model_id` 记的是客户端占位 `openai/gpt-4o-mini` 而非实际平台 `DeepSeek-V4-Pro`(`_model_meta` 读 `req.model` 未读解析结果),后台用量/定价统计会失真,待后续修。
+
+### 2026-06-03 · Claude · 前端整批功能上线(server-API debug APK)
+
+- 已完成:`琥珀Amber数字生命UI` 以 `VITE_API_BASE_URL=http://129.204.151.118`、`VITE_WS_BASE_URL=ws://129.204.151.118` 重建 debug APK(vite build + cap sync + gradle assembleDebug 全绿,JS 412.93KB),含 REQ-002/003/009/011(Claude)+ REQ-015(Codex)全部前端。
+- 已部署:`adb install -r` 到 `emulator-5554`,`com.amber.app/.MainActivity` 启动正常无崩溃;bundle 已编入服务器 URL(1 处 API_BASE_URL),`/api/health` 200;首屏底部导航四 tab(对话/探索/记忆/我的)齐全。
+- 还差什么:聊天真实出字仍卡在服务器未配 `PLATFORM_API_KEY`;正式上架需 HTTPS 公网域名(debug 走 cleartext),release 被 `.env.production` 占位域名拦截。
+- 下一步 process:服务器配真实平台 key 后,在该 APK 上走 创建分身→聊天→刷新 + 探索发布/获取 + 记忆整理 + 兑换码 闭环验收。
+
+### 2026-06-03 · Codex · REQ-015 前端“我的-激活兑换码”
+
+- 已完成：新增 `琥珀Amber数字生命UI/src/api/redeem.ts`，封装 `POST /api/redeem`。
+- 已完成：`Chat.tsx` 的“我的”页新增“激活兑换码”入口和子面板；输入兑换码后提交，成功显示获得碎片和余额，刷新余额/钱包流水；失败显示后端错误。
+- 验证：`npx.cmd tsc --noEmit -p tsconfig.app.json` 通过；`npm.cmd run build` 通过；设置 `VITE_API_BASE_URL=http://129.204.151.118` 后 `npm.cmd run android:build` 通过；APK 已安装并启动到 `emulator-5554`。
+- 还差什么：未用真实登录账号和后台生成的真实兑换码做人工兑换验收。
+- 下一步 process：管理员后台生成一个 100-1000 碎片兑换码，用户在 Android/Web “我的-激活兑换码”输入，确认余额和最近钱包流水刷新。
 
 ### 2026-06-03 · Claude · 剩余需求整批前端 REQ-002/003/009/011（004 已被 007 覆盖）
 

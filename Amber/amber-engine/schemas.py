@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Any, List, Optional
 from datetime import datetime
 
@@ -268,3 +268,43 @@ class PlatformConfigUpdate(BaseModel):
     cost_per_chat: Optional[int] = None
     cost_per_distill: Optional[int] = None
     cost_per_snapshot: Optional[int] = None
+
+
+# --- Redeem codes ---
+
+class RedeemRequest(BaseModel):
+    code: str = Field(..., min_length=4, max_length=64)
+
+
+class RedeemResponse(BaseModel):
+    code: str
+    fragments: int
+    balance: int
+    redeemed_at: str
+
+
+class AdminRedeemGenerateRequest(BaseModel):
+    count: int = Field(1, ge=1, le=500)
+    fragments: int = Field(..., ge=100, le=1000)
+    note: Optional[str] = Field(None, max_length=200)
+
+
+class AdminRedeemCodeResponse(BaseModel):
+    id: str
+    code: str
+    fragments: int
+    status: str
+    batch_id: Optional[str] = None
+    note: Optional[str] = None
+    created_by: Optional[str] = None
+    created_at: Optional[str] = None
+    redeemed_by: Optional[str] = None
+    redeemed_at: Optional[str] = None
+
+
+class AdminRedeemGenerateResponse(BaseModel):
+    batch_id: str
+    count: int
+    fragments: int
+    codes: List[str]
+    items: List[AdminRedeemCodeResponse]

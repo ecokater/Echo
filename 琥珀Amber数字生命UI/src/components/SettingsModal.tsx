@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Check, Camera, User as UserIcon, Sparkles, ChevronDown } from "lucide-react";
 import { pickAvatar } from "@/lib/avatar";
+import { useI18n } from "@/lib/i18n";
+import { useLocaleStore } from "@/stores/locale";
 
 const KEY = "amber_global_api";
 const AVATAR_KEY = "amber_user_avatar";
@@ -16,6 +18,9 @@ const PRESETS = [
 ];
 
 export default function SettingsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t } = useI18n();
+  const locale = useLocaleStore((s) => s.locale);
+  const setLocale = useLocaleStore((s) => s.setLocale);
   const [userAvatar, setUserAvatar] = useState<string | null>(null);
   const [useCustom, setUseCustom] = useState(false);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -67,33 +72,45 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
             transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold"><UserIcon size={15} className="text-accent" /> 设置</h3>
+              <h3 className="flex items-center gap-2 text-sm font-semibold"><UserIcon size={15} className="text-accent" /> {t("settings.title")}</h3>
               <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted/60"><X size={16} /></button>
             </div>
 
             <div className="mb-4 flex items-center gap-3">
-              <button type="button" title="设置我的头像"
+              <button type="button" title={t("settings.avatar")}
                 onClick={async () => { const a = await pickAvatar(); if (a) setUserAvatar(a); }}
                 className="group relative grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-fragment to-accent text-fragment-foreground">
                 {userAvatar ? <img src={userAvatar} alt="" className="h-full w-full object-cover" /> : <UserIcon size={22} />}
                 <span className="absolute inset-0 hidden place-items-center bg-black/40 group-hover:grid"><Camera size={16} className="text-white" /></span>
               </button>
-              <div className="text-xs text-muted-foreground">我的头像<br /><span className="text-[10px]">点击更换 · 仅保存在本地</span></div>
+              <div className="text-xs text-muted-foreground">{t("settings.avatar")}<br /><span className="text-[10px]">{t("settings.avatar.hint")}</span></div>
+            </div>
+
+            <div className="mb-4 flex items-center justify-between rounded-2xl glass px-4 py-2.5">
+              <span className="text-xs text-muted-foreground">{t("settings.language")}</span>
+              <div className="flex gap-1 rounded-xl bg-muted/40 p-0.5">
+                {(["zh", "en"] as const).map((l) => (
+                  <button key={l} onClick={() => setLocale(l)}
+                    className={`rounded-lg px-3 py-1 text-xs transition-colors ${locale === l ? "glass-strong text-foreground" : "text-muted-foreground hover:text-foreground"}`}>
+                    {l === "zh" ? "中文" : "English"}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* 主版本：平台统一供模，无需配置 */}
             <div className="flex items-start gap-3 rounded-2xl glass p-4">
               <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-accent to-primary text-primary-foreground"><Sparkles size={16} /></div>
               <div className="text-xs leading-relaxed text-muted-foreground">
-                <span className="font-medium text-foreground">智能模型已就绪</span><br />
-                平台已接入高性能模型，直接开始对话即可，无需任何配置。
+                <span className="font-medium text-foreground">{t("settings.model.ready")}</span><br />
+                {t("settings.model.ready.desc")}
               </div>
             </div>
 
             {/* 高级：保留「自带 API」能力，默认折叠 */}
             <button onClick={() => setShowAdvanced((v) => !v)}
               className="mt-3 flex w-full items-center justify-between rounded-xl px-1 py-2 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <span>高级 · 使用自己的模型 API</span>
+              <span>{t("settings.advanced")}</span>
               <ChevronDown size={15} className={`transition-transform ${showAdvanced ? "rotate-180" : ""}`} />
             </button>
 
@@ -108,7 +125,7 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
                 >
                   <label className="mb-3 mt-1 flex items-center gap-2 text-xs text-foreground/90">
                     <input type="checkbox" checked={useCustom} onChange={(e) => setUseCustom(e.target.checked)} className="accent-[var(--accent)]" />
-                    启用自定义模型（关闭则使用平台模型）
+                    {t("settings.custom.enable")}
                   </label>
                   <div className={useCustom ? "" : "pointer-events-none opacity-50"}>
                     <div className="mb-3 flex gap-2">
@@ -132,7 +149,7 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
                       </div>
                     </div>
                     <p className="mt-2 text-[10px] leading-relaxed text-muted-foreground">
-                      密钥仅存储在本地浏览器，对话时随请求发送至你自己的模型服务。
+                      {t("settings.custom.hint")}
                     </p>
                   </div>
                 </motion.div>
@@ -141,7 +158,7 @@ export default function SettingsModal({ open, onClose }: { open: boolean; onClos
 
             <button onClick={save}
               className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98]">
-              {saved ? <><Check size={16} /> 已保存</> : "保存"}
+              {saved ? <><Check size={16} /> {t("common.saved")}</> : t("common.save")}
             </button>
           </motion.div>
         </motion.div>

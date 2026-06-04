@@ -1,10 +1,12 @@
 import os
+import hmac
 
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 
+from config import ADMIN_STATIC_TOKEN
 from database import SessionLocal, User
 from services.auth_service import decode_token
 
@@ -23,9 +25,9 @@ def get_db():
         db.close()
 
 
-def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    db: Session = Depends(get_db),
+def _user_from_access_token(
+    credentials: HTTPAuthorizationCredentials | None,
+    db: Session,
 ) -> User:
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing token")
@@ -45,12 +47,35 @@ def get_current_user(
     return user
 
 
-def get_current_admin(
-    user: User = Depends(get_current_user),
+def _is_static_admin_token(credentials: HTTPAuthorizationCredentials | None) -> bool:
+    return bool(
+        ADMIN_STATIC_TOKEN
+        and credentials is not None
+        and hmac.compare_digest(credentials.credentials, ADMIN_STATIC_TOKEN)
+    )
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: Session = Depends(get_db),
 ) -> User:
-    """Admin-only guard. Grants access if the user's role is 'admin', or if the
-    user's phone is in the ADMIN_PHONES allowlist (auto-promotes on first hit)."""
+    return _user_from_access_token(credentials, db)
+
+
+def get_current_admin(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    """Admin-only guard.
+
+    Grants access if ADMIN_STATIC_TOKEN matches the Bearer token, if the user's
+    role is 'admin', or if the user's phone is in the ADMIN_PHONES allowlist
+    (auto-promotes on first hit).
+    """
+    if _is_static_admin_token(credentials):
+        return User(id="static-admin", password_hash="", role="admin", status="active")
+
+    user = _user_from_access_token(credentials, db)
     if user.role != "admin" and user.phone and user.phone in ADMIN_PHONES:
         user.role = "admin"  # persist promotion for subsequent role-based checks
         db.commit()

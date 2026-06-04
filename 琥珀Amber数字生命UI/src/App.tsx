@@ -1,18 +1,20 @@
 import { useEffect } from "react";
 import { HashRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/stores/auth";
+import { useI18n } from "@/lib/i18n";
 import LoginPage from "@/pages/Login";
 import ChatPage from "@/pages/Chat";
 import RechargePage from "@/pages/Recharge";
 import CreatePersonaPage from "@/pages/CreatePersona";
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const initialized = useAuthStore((s) => s.initialized);
   if (!initialized) {
     return (
       <div className="grid h-screen w-screen place-items-center bg-background text-muted-foreground text-sm">
-        正在唤醒…
+        {t("boot.waking")}
       </div>
     );
   }

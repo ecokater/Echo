@@ -1,4 +1,4 @@
-package com.amber.app;
+package com.echo.app;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -2,11 +2,13 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { X, Upload, FileText, Check, Loader2 } from "lucide-react";
 import { parseChatExport, chunkText, importChatToPersona, pickChatFile } from "@/lib/chatImport";
+import { useI18n } from "@/lib/i18n";
 
 /** Import WeChat/QQ chat export (.txt or pasted) into a persona's local memory. */
 export default function ChatImportModal({
   open, onClose, personaId, personaName, onDone,
 }: { open: boolean; onClose: () => void; personaId: string | null; personaName?: string; onDone?: () => void }) {
+  const { t } = useI18n();
   const [raw, setRaw] = useState("");
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState(0);
@@ -38,30 +40,30 @@ export default function ChatImportModal({
             transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
             onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="flex items-center gap-2 text-sm font-semibold"><FileText size={15} className="text-accent" /> 导入聊天记录{personaName ? ` · ${personaName}` : ""}</h3>
+              <h3 className="flex items-center gap-2 text-sm font-semibold"><FileText size={15} className="text-accent" /> {t("imp.title")}{personaName ? ` · ${personaName}` : ""}</h3>
               <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted/60"><X size={16} /></button>
             </div>
             <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
-              从微信/QQ 导出聊天记录为 .txt，上传或粘贴到下方。自动清洗时间戳与系统消息，分块固化为该分身的本地记忆（不上传服务器）。
+              {t("imp.desc")}
             </p>
 
             <button onClick={loadFile}
               className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl glass px-3 py-2.5 text-sm transition-transform active:scale-[0.98]">
-              <Upload size={15} className="text-accent" /> 选择 .txt 文件
+              <Upload size={15} className="text-accent" /> {t("imp.pick")}
             </button>
 
             <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={6}
-              placeholder="或直接粘贴聊天记录文本…"
+              placeholder={t("imp.paste")}
               className="w-full resize-none rounded-xl glass px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" />
 
-            {raw.trim() && <p className="mt-2 text-[11px] text-muted-foreground">清洗后约可生成 <span className="text-accent">{chunkCount}</span> 条记忆碎片</p>}
+            {raw.trim() && <p className="mt-2 text-[11px] text-muted-foreground">{t("imp.preview_pre")} <span className="text-accent">{chunkCount}</span> {t("imp.preview_post")}</p>}
 
             <button onClick={run} disabled={busy || !personaId || chunkCount === 0}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
               {busy ? <Loader2 size={16} className="animate-spin" /> : done > 0 ? <Check size={16} /> : null}
-              {busy ? "导入中…" : done > 0 ? `已导入 ${done} 条` : "导入为记忆"}
+              {busy ? t("imp.importing") : done > 0 ? t("imp.done", { n: done }) : t("imp.submit")}
             </button>
-            {!personaId && <p className="mt-2 text-center text-[11px] text-muted-foreground">请先选择一个数字生命</p>}
+            {!personaId && <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("common.pick_persona")}</p>}
           </motion.div>
         </motion.div>
       )}

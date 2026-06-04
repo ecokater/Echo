@@ -15,8 +15,14 @@ from sqlalchemy.orm import Session
 import state
 from database import User, SharedPersona
 from deps import get_db, get_current_admin
-from repositories import admin_repo, explore_repo, platform_repo
-from schemas import PlatformConfigResponse, PlatformConfigUpdate
+from repositories import admin_repo, explore_repo, platform_repo, redeem_repo
+from schemas import (
+    AdminRedeemCodeResponse,
+    AdminRedeemGenerateRequest,
+    AdminRedeemGenerateResponse,
+    PlatformConfigResponse,
+    PlatformConfigUpdate,
+)
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -34,6 +40,42 @@ def update_pricing(
 ):
     cfg = platform_repo.update_config(db, **req.model_dump(exclude_unset=True))
     return platform_repo.serialize(cfg)
+
+
+@router.post("/redeem-codes/generate", response_model=AdminRedeemGenerateResponse)
+def generate_redeem_codes(
+    req: AdminRedeemGenerateRequest,
+    admin: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    try:
+        batch_id, rows = redeem_repo.generate_codes(
+            db,
+            count=req.count,
+            fragments=req.fragments,
+            note=req.note,
+            created_by=admin.id,
+        )
+    except redeem_repo.RedeemError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+    items = [AdminRedeemCodeResponse(**redeem_repo.serialize(row)) for row in rows]
+    return AdminRedeemGenerateResponse(
+        batch_id=batch_id,
+        count=len(rows),
+        fragments=req.fragments,
+        codes=[row.code for row in rows],
+        items=items,
+    )
+
+
+@router.get("/redeem-codes", response_model=list[AdminRedeemCodeResponse])
+def list_redeem_codes(
+    limit: int = 100,
+    status: str | None = None,
+    _: User = Depends(get_current_admin),
+    db: Session = Depends(get_db),
+):
+    return [AdminRedeemCodeResponse(**redeem_repo.serialize(row)) for row in redeem_repo.list_codes(db, limit=limit, status=status)]
 
 _PROCESS_START = time.time()
 
@@ -124,7 +166,7 @@ def dashboard():
 _DASHBOARD_HTML = """<!doctype html>
 <html lang="zh-CN"><head><meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>Amber 管理后台</title>
+<title>Echo 管理后台</title>
 <style>
 :root{--bg:#0d1117;--card:#161b22;--bd:#30363d;--fg:#e6edf3;--mut:#8b949e;--acc:#d2a24c}
 *{box-sizing:border-box}body{margin:0;font:14px/1.5 system-ui,'Segoe UI',sans-serif;background:var(--bg);color:var(--fg)}
@@ -147,7 +189,7 @@ th{color:var(--mut);font-weight:500}
 .row{display:flex;gap:8px;align-items:center}
 </style></head><body>
 <header>
-  <h1>🟡 Amber 管理后台</h1>
+  <h1>🟡 Echo 管理后台</h1>
   <input id="tok" type="password" placeholder="管理员 access token" style="width:280px"/>
   <button onclick="saveTok()">保存令牌</button>
   <button onclick="loadAll()">刷新</button>
@@ -172,6 +214,19 @@ th{color:var(--mut);font-weight:500}
       <span id="p_msg" class="mut"></span>
     </div>
   </div>
+  <h2>Redeem Codes</h2>
+  <div class="card" id="redeem">
+    <div class="row" style="flex-wrap:wrap;gap:12px">
+      <label>Fragments <input id="r_fragments" type="number" min="100" max="1000" value="100" style="width:90px"></label>
+      <label>Count <input id="r_count" type="number" min="1" max="500" value="10" style="width:90px"></label>
+      <label>Note <input id="r_note" maxlength="200" style="width:240px"></label>
+      <button onclick="generateRedeemCodes()">Generate</button>
+      <button onclick="loadRedeemCodes()">Refresh Codes</button>
+      <span id="r_msg" class="mut"></span>
+    </div>
+    <textarea id="r_result" readonly style="width:100%;height:90px;margin-top:10px;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--fg);padding:8px"></textarea>
+  </div>
+  <div class="scroll"><table id="redeemCodes"></table></div>
   <h2>服务器负载</h2><div class="cards" id="sys"></div>
   <h2>消耗记录（usage_events）</h2><div class="scroll"><table id="usage"></table></div>
   <h2>碎片流水（ledger）</h2><div class="scroll"><table id="ledger"></table></div>
@@ -207,6 +262,7 @@ async function loadAll(){
       card('累计安装',o.shares.installs_total),
     ].join('');
     await loadPricing();
+    await loadRedeemCodes();
     const s=await api('/api/admin/system');
     document.getElementById('sys').innerHTML=[
       card('运行时长',Math.floor(s.uptime_seconds/3600)+'h'+Math.floor(s.uptime_seconds%3600/60)+'m'),
@@ -223,6 +279,36 @@ async function loadAll(){
   }catch(e){err.textContent='加载失败：'+e.message+'（请确认令牌为管理员）';}
 }
 async function rm(id){if(!confirm('确认下架该分享？'))return;try{await api('/api/admin/shares/'+id+'/remove',{method:'POST'});loadAll();}catch(e){alert(e.message);}}
+async function loadRedeemCodes(){
+  const rows=await api('/api/admin/redeem-codes?limit=100');
+  tbl('redeemCodes',rows,[
+    ['Created',r=>dt(r.created_at)],
+    ['Code',r=>r.code],
+    ['Fragments',r=>r.fragments],
+    ['Status',r=>st(r.status)],
+    ['Redeemed By',r=>r.redeemed_by?r.redeemed_by.slice(0,8):''],
+    ['Redeemed At',r=>dt(r.redeemed_at)],
+    ['Note',r=>r.note||'']
+  ]);
+}
+async function generateRedeemCodes(){
+  const msg=document.getElementById('r_msg');
+  const body={
+    fragments:parseInt(document.getElementById('r_fragments').value)||100,
+    count:parseInt(document.getElementById('r_count').value)||1,
+    note:document.getElementById('r_note').value.trim()||null
+  };
+  try{
+    const res=await api('/api/admin/redeem-codes/generate',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    document.getElementById('r_result').value=res.codes.join('\\n');
+    msg.textContent='Generated '+res.count+' codes';
+    msg.className='ok';
+    await loadRedeemCodes();
+  }catch(e){
+    msg.textContent='Generate failed: '+e.message;
+    msg.className='err';
+  }
+}
 const MODELS=[
   ['DeepSeek 深度求索',['deepseek-ai/DeepSeek-V4-Pro','deepseek-ai/DeepSeek-V4-Flash','deepseek-ai/DeepSeek-V3.2','Pro/deepseek-ai/DeepSeek-V3.2','deepseek-ai/DeepSeek-V3.1-Terminus','Pro/deepseek-ai/DeepSeek-V3.1-Terminus','deepseek-ai/DeepSeek-V3','Pro/deepseek-ai/DeepSeek-V3','deepseek-ai/DeepSeek-R1','Pro/deepseek-ai/DeepSeek-R1','deepseek-ai/DeepSeek-R1-0528-Qwen3-8B']],
   ['通义千问 Qwen',['Qwen/Qwen3.5-397B-A17B','Qwen/Qwen3.5-122B-A10B','Qwen/Qwen3.6-35B-A3B','Qwen/Qwen3.6-27B','Qwen/Qwen3.5-35B-A3B','Qwen/Qwen3.5-27B','Qwen/Qwen3.5-9B','Qwen/Qwen3.5-4B','Qwen/Qwen3-32B','Qwen/Qwen3-30B-A3B-Instruct-2507','Qwen/Qwen3-14B','Qwen/Qwen3-8B','Qwen/Qwen3-Coder-30B-A3B-Instruct','Qwen/Qwen2.5-72B-Instruct-128K','Qwen/Qwen2.5-72B-Instruct','Qwen/Qwen2.5-32B-Instruct','Qwen/Qwen2.5-14B-Instruct','Qwen/Qwen2.5-7B-Instruct','Pro/Qwen/Qwen2.5-7B-Instruct']],

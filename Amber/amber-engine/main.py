@@ -21,10 +21,10 @@ import state
 from database import SessionLocal, Base, engine, Persona
 from services.janitor_service import janitor_loop, add_system_log
 from routers import system, ws as ws_router
-from routers import auth, wallet, billing, inference, explore, admin
+from routers import auth, wallet, billing, inference, explore, admin, redeem
 
 # --- App factory ---
-app = FastAPI(title="Amber Engine API", description="数字生命核心引擎")
+app = FastAPI(title="Echo Engine API", description="数字生命核心引擎")
 
 app.add_middleware(
     CORSMiddleware,
@@ -42,6 +42,7 @@ app.include_router(wallet.router)
 app.include_router(billing.router)
 app.include_router(inference.router)
 app.include_router(explore.router)
+app.include_router(redeem.router)
 app.include_router(admin.router)
 
 
@@ -136,7 +137,7 @@ async def startup_event():
                     db.rollback()
 
     asyncio.create_task(janitor_loop())
-    add_system_log("Amber Engine 启动完成。")
+    add_system_log("Echo Engine 启动完成。")
 
 
 if __name__ == "__main__":

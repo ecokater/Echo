@@ -20,7 +20,7 @@ from schemas import (
     InferenceMemorySummaryRequest,
     InferenceMemorySummaryResponse,
 )
-from services import inference_service, wallet_service
+from services import inference_service, wallet_service, moderation_service
 from services.wallet_service import InsufficientBalance
 
 router = APIRouter(prefix="/api/inference", tags=["inference"])
@@ -32,6 +32,23 @@ def _charge(db: Session, user_id: str, cost: int, kind: str) -> int:
         return cost
     except InsufficientBalance:
         raise HTTPException(status_code=402, detail="Insufficient fragments")
+
+
+def _enforce_moderation(db, *, user_id, event_type, endpoint, req, started, texts, detail):
+    """Server-side sensitive-word gate. Runs BEFORE any charge so blocked
+    content is never billed (no consume→refund churn). Raises HTTP 400 on hit."""
+    try:
+        moderation_service.assert_clean(*[t for t in texts if t])
+    except moderation_service.ContentBlocked as mb:
+        _record_usage(
+            db, user_id=user_id, event_type=event_type, endpoint=endpoint,
+            req=req, status="blocked", started=started, error_code="content_blocked",
+        )
+        _record_system(
+            db, user_id=user_id, event_type=f"{event_type}_blocked", level="warning",
+            message=f"moderation blocked terms: {','.join(mb.hits)}",
+        )
+        raise HTTPException(status_code=400, detail=detail)
 
 
 def _latency_ms(started: float) -> int:
@@ -117,6 +134,11 @@ async def inference_chat(
     endpoint = "/api/inference/chat"
     cfg = platform_repo.get_config(db)
     platform = platform_repo.as_resolver_dict(cfg)
+    _enforce_moderation(
+        db, user_id=user.id, event_type="inference_chat", endpoint=endpoint,
+        req=req, started=started, texts=[(req.input or {}).get("content", "")],
+        detail="内容包含敏感词，已拦截",
+    )
     try:
         cost = _charge(db, user.id, cfg.cost_per_chat, "consume_chat")
     except HTTPException:
@@ -204,6 +226,11 @@ async def inference_distill(
     endpoint = "/api/inference/distill"
     cfg = platform_repo.get_config(db)
     platform = platform_repo.as_resolver_dict(cfg)
+    _enforce_moderation(
+        db, user_id=user.id, event_type="inference_distill", endpoint=endpoint,
+        req=req, started=started, texts=[req.core_memory, req.name],
+        detail="人格设定包含敏感词，已拦截",
+    )
     has_platform = platform["enabled"] and bool(platform["api_key"])
     if not (req.model.api_key or has_platform or _has_global_key()):
         response = await inference_service.run_distill(req, cost_fragments=0, platform=platform)

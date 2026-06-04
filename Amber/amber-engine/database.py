@@ -156,6 +156,21 @@ class SkuCatalog(Base):
     active = Column(Boolean, default=True, server_default="1")
 
 
+class RedeemCode(Base):
+    __tablename__ = "redeem_codes"
+
+    id = Column(String, primary_key=True, default=_uuid, index=True)
+    code = Column(String, unique=True, index=True, nullable=False)
+    fragments = Column(BigInteger, nullable=False)
+    status = Column(String, default="active", server_default="active", nullable=False)  # active|used|disabled
+    batch_id = Column(String, index=True, nullable=True)
+    note = Column(Text, nullable=True)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    redeemed_by = Column(String, ForeignKey("users.id"), nullable=True, index=True)
+    redeemed_at = Column(DateTime, nullable=True)
+
+
 # ───────────────────────── Audit events ─────────────────
 
 class UsageEvent(Base):
