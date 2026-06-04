@@ -1,4 +1,4 @@
-# Amber 后端上云部署指南
+# Echo 后端上云部署指南
 
 面向 **Ubuntu Server 22.04 LTS + Docker** 的一键部署。后端是无状态推理代理 +
 auth/wallet/billing/explore/admin；聊天/人格/记忆仍存在用户本地，**服务器不保存
@@ -44,8 +44,8 @@ git clone <你的仓库地址> amber && cd amber
 ## 4. 配置后端 .env
 
 ```bash
-cp Amber/amber-engine/.env.example Amber/amber-engine/.env
-nano Amber/amber-engine/.env
+cp Echo/echo-engine/.env.example Echo/echo-engine/.env
+nano Echo/echo-engine/.env
 ```
 
 至少改这两项：

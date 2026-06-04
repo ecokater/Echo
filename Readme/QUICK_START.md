@@ -1,72 +1,108 @@
-# 琥珀 (Amber) 快速上手指南 ⚡
+# Echo Quick Start
 
-<p align="center">
-  <a href="ReadmeChinese.md">简体中文</a> | 
-  <a href="ReadmeEnglish.md">English</a> | 
-  <a href="ReadmeJapanese.md">日本語</a> | 
-  <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
-  <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
-</p>
+This guide starts the current Echo development stack on Windows.
 
-欢迎来到数字生命的世界！这份指南将帮助您在 3 分钟内完成系统部署并开始与您的第一个数字人格互动。
+## Requirements
 
-## 🛠️ 第一步：一键环境准备
+- Python 3.11+
+- Node.js 22+
+- Android Studio and Android SDK if building Android
+- Optional: Docker and Docker Compose for server deployment
 
-### 1. 后端 (Python)
+## Backend
 
-```bash
-# 进入目录
-cd Amber/Amber/amber-engine
-
-# 创建虚拟环境
+```powershell
+cd Echo/echo-engine
 python -m venv venv
-.\venv\Scripts\activate
-
-# 安装核心依赖
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# 启动引擎
 python main.py
 ```
 
-### 2. 前端 (Node.js)
+The backend listens on:
 
-```bash
-# 新开一个终端，进入目录
-cd Amber/Amber/main_ui
-
-# 安装依赖并启动
-npm install
-npm run dev
+```text
+http://127.0.0.1:8000
 ```
 
----
+Useful environment variables:
 
-## 🎭 第二步：提炼您的第一个人格
+```env
+SECRET_KEY=change-me
+DATABASE_URL=sqlite:///data/amber_memory.db
+ADMIN_STATIC_TOKEN=change-me-admin-token
+PLATFORM_API_KEY=sk-...
+PLATFORM_BASE_URL=https://api.siliconflow.cn/v1
+PLATFORM_MODEL_ID=deepseek-ai/DeepSeek-V4-Pro
+```
 
-1. 访问 `http://localhost:3000`。
-2. 点击左侧导航栏的 **“+” (提炼向导)**。
-3. **上传语料**：将您想要 AI 模仿的对话记录（.txt）上传。
-4. **结晶预览**：系统会自动分析语料并生成性格特质、口头禅等。
-5. **固化保存**：确认配置无误后点击“固化”，分身即刻觉醒。
+## Frontend
 
----
+```powershell
+cd 回声Echo数字生命UI
+npm install
+npm.cmd run dev
+```
 
-## 🌐 第三步：多端使用
+Use `npm.cmd` on Windows if PowerShell blocks `npm.ps1`.
 
-想要在手机上也能和她聊天？
+## One-command launcher
 
-1. 使用新主前端 `琥珀Amber数字生命UI/` 构建 Android APK。
-2. 确保移动端配置的 `VITE_API_BASE_URL` 指向可访问的后端服务。
-3. 登录同一账号后，即可访问自己的分身、记忆与对话数据。
+From the repository root:
 
----
+```powershell
+python launch.py
+```
 
-## 💡 玩转技巧
+## Android debug APK
 
-- **钢印记忆**：在聊天框输入“记住：XXX”，这句话将永久刻入她的核心记忆。
-- **情感波动**：观察顶部的状态栏，她的喜怒哀乐会随你的话语实时起伏。
-- **记忆代谢**：Janitor 守护进程每分钟都在运行，帮她过滤无用的废话。
+```powershell
+cd 回声Echo数字生命UI
+npm.cmd run android:check
+npm.cmd run android:build
+```
 
-> **遇到问题？** 请参阅同目录下的 `BACKEND_GUIDE.md` 和 `FRONTEND_GUIDE.md` 获取详细说明。
+Output:
+
+```text
+回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Install and launch:
+
+```powershell
+$adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb install -r "回声Echo数字生命UI\android\app\build\outputs\apk\debug\app-debug.apk"
+& $adb shell monkey -p com.echo.app -c android.intent.category.LAUNCHER 1
+```
+
+Debug builds default to the host backend:
+
+```env
+VITE_API_BASE_URL=http://10.0.2.2:8000
+VITE_WS_BASE_URL=ws://10.0.2.2:8000
+```
+
+To build against the current test server:
+
+```powershell
+$env:VITE_API_BASE_URL="http://129.204.151.118"
+$env:VITE_WS_BASE_URL="ws://129.204.151.118"
+npm.cmd run android:build
+```
+
+## What to verify
+
+1. Register or log in.
+2. Create a persona from a preset or manual input.
+3. Send a chat message.
+4. Open Memory and confirm local memories are visible.
+5. Try Explore and install a public persona card.
+6. Open Account and check wallet, orders, usage history, and redeem-code entry.
+7. Import a `.txt` chat export or use screenshot OCR on Android.
+
+## Notes
+
+- Echo is the product name. Some paths still include historical names for compatibility.
+- Do not put packaged desktop builds under a path containing Chinese characters.
+- Release Android/iOS builds must use a real HTTPS API endpoint.

@@ -1,4 +1,4 @@
-# Amber 协同工作日志（精简版）
+# Echo 协同工作日志（精简版）
 
 > 目的：给 Codex / Claude 快速交接当前状态，减少 token 占用。久远逐条流水已压缩为摘要；需要旧细节时看 git 历史。
 > 约定：每次完成具体工作后追加一条短记录；API 契约变化同步更新本文件。
@@ -15,16 +15,16 @@
 
 ## 目录速览
 
-- `Amber/amber-engine/`：FastAPI 后端。
-- `琥珀Amber数字生命UI/`：当前主前端，Vite + React + Capacitor/Electron。
-- `Amber/main_ui/`：旧 Next.js/Electron 前端，基本退役。
+- `Echo/echo-engine/`：FastAPI 后端。
+- `回声Echo数字生命UI/`：当前主前端，Vite + React + Capacitor/Electron。
+- `Echo/main_ui/`：旧 Next.js/Electron 前端，基本退役。
 - `docs/`：部署、移动端构建等文档。
 
 ## 当前协作状态
 
-- Claude 正在前端批量任务：REQ-002/003/004/009 前端/011，见 `working.md` 锁定文件。
-- Codex 当前没有代码锁；刚完成 REQ-015 前端兑换码入口。
-- 不要碰 Claude 锁定的 `Chat.tsx`、`CreatePersona.tsx`、`src/components/*`、`src/lib/janitor.ts`、`src/lib/localdb.ts`、`src/api/explore.ts`，除非用户明确要求协调同一区域。
+- 当前锁定情况以 `working.md` 为准。
+- 近期已完成：REQ-020 图片 OCR 导入、REQ-019 敏感词线上闭环、REQ-017 i18n、REQ-016 Echo 改名、REQ-015 兑换码。
+- Codex 当前在更新 GitHub Echo README，未触碰 Claude 的 OCR/Android 代码改动。
 
 ---
 
@@ -80,14 +80,58 @@ server test: `http://129.204.151.118`
 | REQ-017 多语言 | ✅ 全量页面+三覆盖层面板中英化（含钱包流水/用量/状态标签翻译、输入框占位符用分身名） | 仅余 PlusMenu 占位项/气泡小标签/日期格式等极少非关键串 |
 | REQ-018 预设人格 | ✅ 5 个预设 + 创建页一键填充 | 可按需增减预设或加预设头像 |
 | REQ-019 敏感词 | ✅ 前端拦发送/创建 + 后端扣费前校验，**线上闭环已验证**(400+零扣费) | 投放维护版词库或接内容安全 API 提升合规强度 |
+| REQ-020 图片 OCR 导入 | ✅ ML Kit 捆绑中文识别器(离线/免 Play Services) + Camera 相册选图,接入导入管线;APK 含离线模型,插件注册无崩溃 | 相册选图→识别真机点按走查(测试图已入模拟器相册) |
 
 ---
 
 ## 近期关键记录
 
+### 2026-06-05 · Claude · 全量改名 Amber→Echo / 琥珀→回声(含文件夹,硬改接受数据重置)
+
+- 文件夹:`Amber/`→`Echo/`、`amber-engine`→`echo-engine`、`琥珀Amber数字生命UI`→`回声Echo数字生命UI`、`启动Amber.*`→`启动Echo.*`(git 识别 333 renames)。
+- 前端代码硬改内部标识:IndexedDB `amber-local`→`echo-local`、localStorage `amber_*`→`echo_*`(access/refresh/avatar/theme/global_api/use_custom_api/lastorg)、类型 `AmberUser/AmberDB`→`Echo*`、CSS `bubble-amber-rim`→`bubble-echo-rim`、消息 `role:"amber"`→`"echo"`(纯 UI 标签,发后端仍 user/assistant)。
+- 后端硬改:`amber_memory.db`→`echo_memory.db`(本地 sqlite 默认)、`com.amber.frag*`→`com.echo.frag*`、订单前缀 `AMBER`→`ECHO`、`admin.py` dashboard 标题/token 键、docker-compose `../Echo/echo-engine` + `POSTGRES_DB=echo`。
+- docs/README/CLAUDE/AGENTS/Readme 品牌改 Echo;**保留真实文件名**(小写)`amber_deploy_ed25519`、`amber_admin_static_token.txt`。
+- 保留(非品牌):index.css 描述暖金色调的 `amber/honey` 颜色注释。
+- 验证:tsc + `android:build`(43s)从新目录 `回声Echo数字生命UI` 全绿;py_compile 通过。
+- 数据影响:本地 IndexedDB/localStorage 改名 → 登录态/分身/记忆/设置**重置**(用户已确认接受)。
+- 还差什么:服务器 Postgres DB 名 + `/home/ubuntu/Echo` 下目录仍是旧名,**下次部署**时随新 compose 一并改 → 服务器数据重置 + 重配平台 key(单独步骤,用户触发)。模拟器随 Android Studio 关闭已下线,改名后真机走查待重启模拟器。
+
+### 2026-06-05 · Codex · GitHub Echo README 更新
+
+- 已完成：重写根目录 `README.md`，从旧 Echo 叙事版更新为 Echo 当前项目说明。
+- 覆盖内容：本地优先架构、功能状态、API/数据边界、快速启动、Android 构建、Docker 部署、隐私与合规、当前目录结构和反馈方式。
+- 还差什么：未提交/未推送到 GitHub；如需同步远程，需要单独 commit 并 push 到 `echo` remote。
+- 下一步 process：确认 README 文案后，可仅提交 `README.md`、`work.md`、`working.md` 到 `echo` 远程，避免夹带当前工作区其他未提交功能改动。
+
+### 2026-06-05 · Codex · `Readme/` 文档与实机图片彻底更新
+
+- 已完成：重写 `Readme/ReadmeChinese.md`、`Readme/ReadmeEnglish.md`、`Readme/ReadmeJapanese.md`、`Readme/QUICK_START.md`、`Readme/BACKEND_GUIDE.md`、`Readme/FRONTEND_GUIDE.md`。
+- 已完成：删除旧 Echo 图片 `main_ui/settings_center/relay_config/distillation*.png`，替换为当前 Android Echo 实机/模拟器截图：`echo_chat.png`、`echo_explore.png`、`echo_memory.png`、`echo_me.png`、`echo_import.png`。
+- 已完成：根目录 `README.md` 增加当前实机截图区域；所有文档产品名称统一为 Echo/回声；贡献者/维护者统一为 `ecokater`。
+- 验证：`rg` 检查未发现旧图片引用或旧个人贡献者残留；`Readme/image` 仅保留 5 张 Echo 截图。
+- 还差什么：未提交/未推送到 GitHub；工作区仍有 Claude 的 OCR/Android 未提交改动。
+- 下一步 process：若要发布到 GitHub，建议只 stage `README.md`、`Readme/**`、`work.md`、`working.md` 后提交推送，避免夹带功能改动。
+
+### 2026-06-04 · Claude · REQ-020 图片 OCR 导入(ML Kit 中文)
+
+- 选型:`@pantrist/capacitor-plugin-ml-kit-text-recognition@6`(Cap6 兼容)+ `@capacitor/camera@6`;`@capacitor-mlkit/text-recognition` 不存在。
+- 关键补丁(patch-package,`patches/@pantrist+...+6.0.0.patch`):插件原版硬编码 **Latin** 识别器 + Play-Services 投递模型(认不了中文、依赖 Play Services)→ 改 Kotlin 用 `ChineseTextRecognizerOptions`、gradle 依赖换 `com.google.mlkit:text-recognition-chinese:16.0.1`(**捆绑模型,中英混识,离线免 Play Services**)。`package.json` 加 `postinstall: patch-package`。
+- 前端:新增 `lib/ocr.ts`(`recognizeImageFromAlbum`:Camera 相册选图→base64→`detectText`→文本;`ocrAvailable()` 仅原生);`ChatImportModal` 加「从截图识别文字」按钮(仅原生显示,结果追加进 `raw`,走现有 `parseChatExport→chunkText→importChatToPersona`,全程本地);i18n 加 `imp.ocr*` 键;AndroidManifest 加 `READ_MEDIA_IMAGES`/`READ_EXTERNAL_STORAGE(max32)`。
+- 验证:tsc+vite build 通过;`assembleDebug` 成功(4m,新增 pantrist/camera 原生模块);APK 内确认离线中文模型(`libmlkit_google_ocr_pipeline.so`×4ABI + `gocr Hani_ctc/Latn_ctc` + `text-recognition-chinese.properties`);装到 `emulator-5554`,logcat 确认 `Camera`+`CapacitorPluginMlKitTextRecognition` 注册成功无崩溃。已推中文测试图到 `/sdcard/Pictures/echo_ocr_test.png` 备真机走查。
+- 还差什么:相册「选图→识别出字」需真机点按走查(WebView+系统选图器无法稳定脚本化);未提交。
+
+### 2026-06-04 · Codex · Android debug APK 重新安装并启动
+
+- 已完成:检测 `emulator-5554` 在线;确认当前 Android `applicationId` 为 `com.echo.app`。
+- 已完成:`adb install -r 回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk` 返回 `Success`。
+- 已完成:`adb shell monkey -p com.echo.app -c android.intent.category.LAUNCHER 1` 注入启动事件;`dumpsys window` 确认前台为 `com.echo.app/.MainActivity`。
+- 待办缺口:无安装/启动阻塞;后续仍需按 REQ-001 做登录→创建分身→聊天→刷新持久化真实验收。
+- 下一步 process:如需继续验收,优先用服务器 API 版 debug 包在 Android 上跑完整主流程。
+
 ### 2026-06-04 · Claude · 后端部署(改名 + 敏感词 + distill 修复)上线
 
-- 已部署:经本机 `scp`(部署密钥 `amber_deploy_ed25519`)上传 6 个改动文件到 `/home/ubuntu/Echo/Amber/amber-engine`(`main.py`、`routers/admin.py`、`routers/inference.py`、`services/inference_service.py`、`services/moderation_service.py`、`data/sensitive_words.txt`),`cd deploy && docker compose up -d --build backend`。
+- 已部署:经本机 `scp`(部署密钥 `amber_deploy_ed25519`)上传 6 个改动文件到 `/home/ubuntu/Echo/Echo/echo-engine`(`main.py`、`routers/admin.py`、`routers/inference.py`、`services/inference_service.py`、`services/moderation_service.py`、`data/sensitive_words.txt`),`cd deploy && docker compose up -d --build backend`。
 - 验证:`deploy-backend-1` Up(healthy)、`/api/health` 200、`/openapi.json` 标题=`Echo Engine API`、`inference/distill` 路由存在;moderation_service 成功 import(容器健康即证)。
 - 含义:REQ-016 后端改名、REQ-019 敏感词后端扣费前校验、distill 误退款修复(`_loads_json_loose`)三项**线上生效**。
 - 线上验证补充:`GET /api/admin/pricing` 确认 `api_key_set=True`、模型 `deepseek-ai/DeepSeek-V4-Pro`、单价 1/20/5 —— **平台 key 已配,真实出字可用**。REQ-019 真机闭环:注册临时号→发「赌博」敏感内容→`HTTP 400 内容包含敏感词，已拦截`→余额 100 未变(扣费前拦截零扣费)→删号清理,**线上生效已证**。
@@ -111,7 +155,7 @@ server test: `http://129.204.151.118`
 
 ### 2026-06-03 · Claude · REQ-016/017/018/019 新批次
 
-- **REQ-016 全量改名**:后端用户可见文本(FastAPI 标题 `Echo Engine API`、启动日志、管理后台 `<title>/<h1>`)→ 回声/Echo;前端品牌(Login/Chat/Recharge「琥珀 Amber」→「回声 Echo」、默认陪伴名「琥珀」→「回声」);Android `capacitor.config.ts` appId `com.amber.app`→`com.echo.app` + appName、`build.gradle` namespace/applicationId、`strings.xml` app_name/包名/url_scheme、`MainActivity.java` 迁至 `com/echo/app`(旧 `com/amber` 已删)。**保留**:`amber_*` localStorage 键、IndexedDB `amber-local` 库名、CSS `bubble-amber-rim`、`AmberUser/AmberDB` 类型名、`role:"amber"` 消息类型字面量(改则丢用户本地数据或大范围联动)。
+- **REQ-016 全量改名**:后端用户可见文本(FastAPI 标题 `Echo Engine API`、启动日志、管理后台 `<title>/<h1>`)→ 回声/Echo;前端品牌(Login/Chat/Recharge「回声 Echo」→「回声 Echo」、默认陪伴名「回声」→「回声」);Android `capacitor.config.ts` appId `com.amber.app`→`com.echo.app` + appName、`build.gradle` namespace/applicationId、`strings.xml` app_name/包名/url_scheme、`MainActivity.java` 迁至 `com/echo/app`(旧 `com/amber` 已删)。**保留**:`amber_*` localStorage 键、IndexedDB `amber-local` 库名、CSS `bubble-amber-rim`、`EchoUser/EchoDB` 类型名、`role:"amber"` 消息类型字面量(改则丢用户本地数据或大范围联动)。
 - **REQ-017 i18n MVP**:新增 `lib/i18n.ts`(zh/en 字典 + `useI18n`/`translate`,缺失键回退中文)、`stores/locale.ts`(zustand,持久化 `echo_locale`);`SettingsModal` 内加「中文/English」切换;覆盖 Login 全量 + Settings + 品牌/底部导航键。剩余:Chat 深层文案/Recharge/Create 渐进迁移。
 - **REQ-018 预设人格**:新增 `lib/presets.ts`(5 个预设含阈值+核心记忆);`CreatePersona` 顶部「从预设开始」chips 一键填充。
 - **REQ-019 敏感词**:前端 `lib/moderation.ts`(NFKC+分隔规避+中英 SEED) 拦 聊天发送/创建分身;后端 `services/moderation_service.py` 在 `routers/inference.py` chat/distill **扣费前** `_enforce_moderation`,命中记 `status=blocked`(0 扣费)+ HTTP 400;词库可经 `data/sensitive_words.txt`/`SENSITIVE_WORDS_EXTRA` 热扩展。
@@ -128,14 +172,14 @@ server test: `http://129.204.151.118`
 
 ### 2026-06-03 · Claude · 前端整批功能上线(server-API debug APK)
 
-- 已完成:`琥珀Amber数字生命UI` 以 `VITE_API_BASE_URL=http://129.204.151.118`、`VITE_WS_BASE_URL=ws://129.204.151.118` 重建 debug APK(vite build + cap sync + gradle assembleDebug 全绿,JS 412.93KB),含 REQ-002/003/009/011(Claude)+ REQ-015(Codex)全部前端。
+- 已完成:`回声Echo数字生命UI` 以 `VITE_API_BASE_URL=http://129.204.151.118`、`VITE_WS_BASE_URL=ws://129.204.151.118` 重建 debug APK(vite build + cap sync + gradle assembleDebug 全绿,JS 412.93KB),含 REQ-002/003/009/011(Claude)+ REQ-015(Codex)全部前端。
 - 已部署:`adb install -r` 到 `emulator-5554`,`com.amber.app/.MainActivity` 启动正常无崩溃;bundle 已编入服务器 URL(1 处 API_BASE_URL),`/api/health` 200;首屏底部导航四 tab(对话/探索/记忆/我的)齐全。
 - 还差什么:聊天真实出字仍卡在服务器未配 `PLATFORM_API_KEY`;正式上架需 HTTPS 公网域名(debug 走 cleartext),release 被 `.env.production` 占位域名拦截。
 - 下一步 process:服务器配真实平台 key 后,在该 APK 上走 创建分身→聊天→刷新 + 探索发布/获取 + 记忆整理 + 兑换码 闭环验收。
 
 ### 2026-06-03 · Codex · REQ-015 前端“我的-激活兑换码”
 
-- 已完成：新增 `琥珀Amber数字生命UI/src/api/redeem.ts`，封装 `POST /api/redeem`。
+- 已完成：新增 `回声Echo数字生命UI/src/api/redeem.ts`，封装 `POST /api/redeem`。
 - 已完成：`Chat.tsx` 的“我的”页新增“激活兑换码”入口和子面板；输入兑换码后提交，成功显示获得碎片和余额，刷新余额/钱包流水；失败显示后端错误。
 - 验证：`npx.cmd tsc --noEmit -p tsconfig.app.json` 通过；`npm.cmd run build` 通过；设置 `VITE_API_BASE_URL=http://129.204.151.118` 后 `npm.cmd run android:build` 通过；APK 已安装并启动到 `emulator-5554`。
 - 还差什么：未用真实登录账号和后台生成的真实兑换码做人工兑换验收。
@@ -202,14 +246,14 @@ server test: `http://129.204.151.118`
 后端：
 
 ```powershell
-python -m compileall Amber\amber-engine
-python -c "import sys; sys.path.insert(0, r'Amber\\amber-engine'); import main; print('main import ok')"
+python -m compileall Echo\echo-engine
+python -c "import sys; sys.path.insert(0, r'Echo\\echo-engine'); import main; print('main import ok')"
 ```
 
 Vite UI：
 
 ```powershell
-cd 琥珀Amber数字生命UI
+cd 回声Echo数字生命UI
 npm.cmd run build
 npx.cmd tsc --noEmit -p tsconfig.app.json
 ```
@@ -217,6 +261,6 @@ npx.cmd tsc --noEmit -p tsconfig.app.json
 Android：
 
 ```powershell
-cd 琥珀Amber数字生命UI
+cd 回声Echo数字生命UI
 npm.cmd run android:build
 ```

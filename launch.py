@@ -1,4 +1,4 @@
-"""Amber one-click launcher (new commercial frontend)."""
+"""Echo one-click launcher (new commercial frontend)."""
 import os
 import sys
 import time
@@ -6,12 +6,12 @@ import subprocess
 import urllib.request
 
 ROOT     = os.path.dirname(os.path.abspath(__file__))
-ENGINE   = os.path.join(ROOT, "Amber", "amber-engine")
-UI       = os.path.join(ROOT, "琥珀Amber数字生命UI")
+ENGINE   = os.path.join(ROOT, "Echo", "echo-engine")
+UI       = os.path.join(ROOT, "回声Echo数字生命UI")
 NODE     = os.path.join(os.environ["USERPROFILE"], "node22", "node-v22.16.0-win-x64")
 NPX      = os.path.join(NODE, "npx.cmd")
 # Reuse the Electron binary already installed (and Defender-whitelisted) under main_ui
-ELECTRON = os.path.join(ROOT, "Amber", "main_ui", "node_modules", "electron", "dist", "electron.exe")
+ELECTRON = os.path.join(ROOT, "Echo", "main_ui", "node_modules", "electron", "dist", "electron.exe")
 
 VITE_PORT = "5173"
 
@@ -38,7 +38,7 @@ def wait_http(url: str, label: str, timeout: int = 90) -> bool:
 
 def main():
     print("\n================================")
-    print("   琥珀 Amber  启动中 (商业化版)")
+    print("   回声 Echo  启动中 (商业化版)")
     print("================================\n")
 
     # 1. Backend
@@ -58,7 +58,7 @@ def main():
     # 3. Electron shell loading the new frontend
     print("[3/3] 启动 Electron 桌面窗口...")
     app = subprocess.Popen([ELECTRON, UI], cwd=UI, env=env)
-    print(f"\n✓ 琥珀 Amber 已启动 (PID: {app.pid})")
+    print(f"\n✓ 回声 Echo 已启动 (PID: {app.pid})")
     print("  关闭窗口后将自动清理后台进程。\n")
 
     app.wait()

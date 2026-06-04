@@ -1,4 +1,4 @@
-# Amber 后端上云：Postgres + FastAPI 后端 + Caddy(自动 HTTPS 反代)
+# Echo 后端上云：Postgres + FastAPI 后端 + Caddy(自动 HTTPS 反代)
 # 用法见 docs/DEPLOY.md。在本目录执行： docker compose up -d --build
 #
 # 可在本目录放一个 .env 覆盖下面的默认值（POSTGRES_PASSWORD / SITE_ADDRESS 等）。
@@ -8,28 +8,28 @@ services:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-amber}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-amber_pwd}
-      POSTGRES_DB: ${POSTGRES_DB:-amber}
+      POSTGRES_USER: ${POSTGRES_USER:-echo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-echo_pwd}
+      POSTGRES_DB: ${POSTGRES_DB:-echo}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-amber} -d ${POSTGRES_DB:-amber}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-echo} -d ${POSTGRES_DB:-echo}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   backend:
     build:
-      context: ../Amber/amber-engine
+      context: ../Echo/echo-engine
     restart: unless-stopped
     # .env 提供 SECRET_KEY / ADMIN_PHONES / 计费等；DATABASE_URL 由下方 environment 覆盖指向 db
     env_file:
-      - ../Amber/amber-engine/.env
+      - ../Echo/echo-engine/.env
     environment:
       ENV: ${ENV:-prod}
       WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
-      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-amber}:${POSTGRES_PASSWORD:-amber_pwd}@db:5432/${POSTGRES_DB:-amber}
+      DATABASE_URL: postgresql+psycopg2://${POSTGRES_USER:-echo}:${POSTGRES_PASSWORD:-echo_pwd}@db:5432/${POSTGRES_DB:-echo}
     depends_on:
       db:
         condition: service_healthy
@@ -46,7 +46,7 @@ services:
       - "80:80"
       - "443:443"
     environment:
-      # 有域名：SITE_ADDRESS=amber.example.com → Caddy 自动签发 Let's Encrypt HTTPS
+      # 有域名：SITE_ADDRESS=echo.example.com → Caddy 自动签发 Let's Encrypt HTTPS
       # 无域名先用 IP：保持默认 :80（纯 HTTP，仅建议临时测试）
       SITE_ADDRESS: ${SITE_ADDRESS:-:80}
     volumes:

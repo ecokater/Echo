@@ -2,7 +2,7 @@
 
 ## 目标
 
-把 Amber 从本地单用户实验系统推进到可服务多用户的后端平台，并提供可视化管理后台。优先解决账号、权限、系统设置、运营管理、可观测性和云端部署。QQ bot / relay 支持已移入 `qq-bot-support` 分支，不属于主版本规划。
+把 Echo 从本地单用户实验系统推进到可服务多用户的后端平台，并提供可视化管理后台。优先解决账号、权限、系统设置、运营管理、可观测性和云端部署。QQ bot / relay 支持已移入 `qq-bot-support` 分支，不属于主版本规划。
 
 ## 总原则
 
@@ -332,10 +332,10 @@ VITE_WS_BASE_URL=wss://api.example.com
 
 - Claude 当前锁定 WebSocket/Chat 链路，Codex 不应修改这些文件。
 - Codex 可优先认领：
-  - `Amber/amber-engine/routers/admin.py`
-  - `Amber/amber-engine/services/settings_service.py`
-  - `Amber/amber-engine/repositories/settings_repo.py`
-  - `Amber/amber-engine/schemas.py`
-  - `琥珀Amber数字生命UI/src/pages/Admin*.tsx`
-  - `琥珀Amber数字生命UI/src/api/admin.ts`
+  - `Echo/echo-engine/routers/admin.py`
+  - `Echo/echo-engine/services/settings_service.py`
+  - `Echo/echo-engine/repositories/settings_repo.py`
+  - `Echo/echo-engine/schemas.py`
+  - `回声Echo数字生命UI/src/pages/Admin*.tsx`
+  - `回声Echo数字生命UI/src/api/admin.ts`
 - 每次开始前必须更新 `working.md`，完成后更新 `work.md`。

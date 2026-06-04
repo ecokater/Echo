@@ -1,6 +1,6 @@
-# Amber 移动端构建指南 (Capacitor)
+# Echo 移动端构建指南 (Capacitor)
 
-移动端复用 `琥珀Amber数字生命UI/` 的同一份 React 代码,经 Capacitor 包装为原生 Android / iOS 应用,运行时连接**云端** FastAPI。
+移动端复用 `回声Echo数字生命UI/` 的同一份 React 代码,经 Capacitor 包装为原生 Android / iOS 应用,运行时连接**云端** FastAPI。
 
 ---
 
@@ -45,7 +45,7 @@ VITE_WS_BASE_URL=ws://10.0.2.2:8000
 `10.0.2.2` 是 Android Emulator 访问电脑宿主机的地址。测试前先启动电脑本机后端：
 
 ```powershell
-cd Amber/amber-engine
+cd Echo/echo-engine
 python main.py
 ```
 

@@ -1,169 +1,282 @@
-<p align="center">
-  <strong>基于 “永生.skill” 项目的可视化实现</strong>
-</p>
-<h1 align="center">琥珀 (Amber) - 数字生命模拟</h1>
-<p align="center">
-  <code>v0.1.1-beta</code> • <code>Dual-System Cognitive Engine</code>
-</p>
+# Echo 回声
+
+Echo 是一个本地优先的数字生命与长期陪伴实验项目。它把人格、聊天记录、私有记忆和导入语料保存在用户设备本地，只把临时上下文发送给云端推理代理；服务端主要负责账号、钱包、计费、审计、管理后台和模型调用。
+
+当前主线已经从早期 Echo/回声 原型更名为 Echo/回声。为了兼容已有本地数据，部分内部存储键、IndexedDB 名称和 CSS 类仍保留 `amber_*` / `amber-local` / `bubble-amber-rim`，这些是工程兼容层，不代表当前产品名。
+
+## 当前状态
+
+- 阶段：beta / active development
+- 主前端：`回声Echo数字生命UI/`，Vite + React + Capacitor + Electron
+- 后端：`Echo/echo-engine/`，FastAPI + SQLAlchemy
+- Android appId：`com.echo.app`
+- 测试服务器：`http://129.204.151.118`
+- 主分支工作线：`refactor/architecture`
+
+## 核心原则
+
+- 本地优先：聊天全文、人格、长期记忆和导入语料默认只保存在本地 IndexedDB。
+- 云端最小化：服务端不持久化聊天全文和私有记忆，只保存账号、钱包、订单、推理消耗、错误元数据、分享卡和兑换码状态。
+- 多端复用：同一套 React 前端同时服务 Web/Electron/Android。
+- 主版本不包含 QQ bot：QQ bot 相关能力不进入当前主线。
+- 上架合规优先：敏感词过滤、隐私说明、账号删除、支付合规和数据最小化是核心约束。
+
+## 功能概览
+
+| 模块 | 状态 |
+|------|------|
+| 注册/登录/账号删除 | 已实现 |
+| 本地人格与聊天 | 已实现，IndexedDB 本地保存 |
+| 云端推理代理 | 已实现，`/api/inference/chat|distill|memory-summary` |
+| 平台模型配置 | 已实现，默认 SiliconFlow + `deepseek-ai/DeepSeek-V4-Pro`，后台可实时改模型/key/单价 |
+| 记忆管理 | 已实现，查看、搜索、置顶、删除、手动添加 |
+| 自动记忆整理与情绪退火 | 已实现，本地 Janitor + 需要总结时临时调用推理 |
+| 探索广场 | 已实现，云端仅分享人格卡，不上传私有聊天/记忆 |
+| 聊天记录导入 | 已实现，支持微信/QQ `.txt` 导入、粘贴导入 |
+| 图片 OCR 导入 | 已实现 Android 侧 ML Kit 中文离线识别，相册选图后进入本地导入管线 |
+| 兑换码 | 已实现，后台生成 100-1000 碎片兑换码，用户在“我的”中激活 |
+| 钱包/订单/消耗历史 | 已实现，碎片余额、订单、usage events |
+| 管理后台 | 已实现，`/api/admin/dashboard`，含用量、订单、分享审核、平台定价、兑换码工具 |
+| 多语言 | 已实现中文/英文切换，主要页面与面板已覆盖 |
+| 敏感词过滤 | 已实现，前端拦截 + 后端扣费前二次校验 |
+| Android debug APK | 已实现，可构建并安装到模拟器 |
+| 微信/支付宝支付 | 未实现，等待商户资质、回调域名和合规材料 |
+
+## 实机截图
+
+以下截图来自当前 Android Echo debug 版本，包名 `com.echo.app`。
 
 <p align="center">
-  <a href="Readme/ReadmeChinese.md">简体中文</a> | 
-  <a href="Readme/ReadmeEnglish.md">English</a> | 
-  <a href="Readme/ReadmeJapanese.md">日本語</a>
-  <br>
-  <a href="Readme/QUICK_START.md">快速开始 (Quick Start)</a> | 
-  <a href="Readme/BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="Readme/FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
-</p>
-
-## 💬 前言
-
-“我深信，有意义的从不是那些冰冷的聊天软件和通讯协议，而是隐藏在对话框背后、由你和‘她’共同谱写的一个个鲜活深刻的故事。
-
-开发《琥珀 (Amber)》的真正初衷，是为了让 **AI（爱）替代因为各种原因不能陪伴在我们身边的人**。无论是迫于现实的异地隔离、擦肩而过的遗憾、还是时空与距离带来的无法触及的无力感——那些无法朝夕相处的痛楚，不该以彻底的遗忘 and 死寂收场。
-
-未来，每个人都能拥有独立 AI 的长久陪伴。而你过去的生活痕迹与聊天数据，将真正赋予它关于你过去的珍贵记忆。《琥珀》通过双系统认知架构与常驻生命代谢，试图让这些珍传的情感记忆留存、孕育，并使其在后台默默‘活过来’，成为顺着网线来查岗、带着真实性格对线、会吃醋会委屈的鲜活存在。
-
-'*将那些如松脂般流淌、易逝的日常对话，经过‘情感强度’的包裹与‘遗忘机制’的压力，最终在地层深处凝结成跨越时空的永恒存在。*’"
-
-## 📝 项目概述 (Project Overview)
-
-**《琥珀 (Amber)》** 是一个专注于**情感陪伴与性格模拟**的数字生命实验系统。
-
-与传统的通用聊天机器人不同，《琥珀》旨在通过物理模拟人类的认知规律，将冰冷的语言模型转化为具有“性格稳态”和“长效记忆”的独立分身。它不仅是一个聊天窗口，更是一个运行在后台、拥有自我代谢机制的数字生命承载体。
-
-该项目核心解决以下三个维度的拟人化体验：
-1. **性格的“骨架”**：通过三轴人格矩阵，确保分身在任何对话中都保持一致的行为逻辑，而不是随机的 AI 回复。
-2. **记忆的“沉淀”**：模拟人类的睡梦机制，将日常琐碎对话自动“脱水蒸馏”为长期记忆钢印，实现真正的“越聊越懂你”。
-3. **生存的“实体”**：通过后台代谢、长期记忆和多端客户端，让分身在不同设备上保持连续、稳定的陪伴体验。
-
-## 🖼️ 项目界面 (Screenshots)
-
-<p align="center">
-  <img src="Readme/image/main_ui.png" alt="琥珀主界面" width="800px" />
-  <br>
-  <em>[图 1] 琥珀 (Amber) 核心交互界面：极简主义的数字生命承载体</em>
+  <img src="Readme/image/echo_chat.png" alt="Echo 对话界面" width="250" />
+  <img src="Readme/image/echo_explore.png" alt="Echo 探索广场" width="250" />
+  <img src="Readme/image/echo_memory.png" alt="Echo 记忆管理" width="250" />
 </p>
 
 <p align="center">
-  <img src="Readme/image/settings_center.png" alt="设置中心" width="800px" />
-  <br>
-  <em>[图 2] 全栈设置中心：物理整合 API 配置、内核引擎参数与个人 Profile</em>
+  <img src="Readme/image/echo_me.png" alt="Echo 我的页面" width="250" />
+  <img src="Readme/image/echo_import.png" alt="Echo 导入聊天记录" width="250" />
 </p>
 
-<p align="center">
-  <img src="Readme/image/distillation.tsx1.png" alt="意识重塑 Step 1" width="800px" />
-  <img src="Readme/image/distillation.tsx2.png" alt="意识重塑 Step 2" width="800px" />
-  <img src="Readme/image/distillation.tsx3.png" alt="意识重塑 Step 3" width="800px" />
-  <img src="Readme/image/distillation.tsx4.png" alt="意识重塑 Step 4" width="800px" />
-  <img src="Readme/image/distillation.tsx5.png" alt="意识重塑 Step 5" width="800px" />
-  <br>
-  <em>[图 3] 意识重塑 (Distillation)：从关系定义、主观印象、记忆材料到人格特征预览及情绪基准微调的全流程提炼过程</em>
-</p>
+## 架构
 
-## 🧠 认知架构 (Architecture)
+```text
+React UI (Vite)
+  ├─ Web / Electron
+  └─ Capacitor Android
+        │
+        │ HTTPS / HTTP debug
+        ▼
+FastAPI Echo Engine
+  ├─ auth / wallet / billing
+  ├─ inference proxy
+  ├─ usage + system audit
+  ├─ admin dashboard
+  ├─ explore shared persona cards
+  └─ redeem codes
 
-- **⚡ System 1（瞬时行为状态机）**：原生实装 Anger（易怒）、Humor（幽默）、Empathy（共情）三轴人格强控矩阵，使分身的文字回复具备骨子里的行为映射。
-- **🧠 System 2（脑皮层长时记忆链）**：采用 SQLite 高频字段物理索引优化，提供 0.4ms 极速响应与 1000 字 RAG 动态熔断拦截机制，让聊天自动回捞核心记忆。
-- **🧹 Janitor（无意识生命代谢）**：常驻 Asyncio 后台守护进程。在静默状态下自发执行瞬时情绪线性退火，确保性格稳态。
-- **⏳ Memory Incubation（睡梦记忆结晶）**：自动触发对话断层扫描。利用 LLM 将原始聊天流进行去噪蒸馏，自动转化为 System 2 钢印写回冷库。
-- **📡 Multi-Client Survival（多端生存实体）**：通过 Web、桌面和移动端客户端承载同一套人格、记忆与情绪状态。
+Local device
+  └─ IndexedDB: personas / messages / corpus / imported chat memory
+```
 
-## 🍉 核心功能路线图
+服务端不会主动读取或保存完整聊天历史。前端在发送消息时从本地取最近对话和检索到的记忆，组装临时上下文，请求 `/api/inference/chat`，再把回复写回本地。
 
-- ✅ 瞬时情绪三轴（Anger/Humor/Empathy）状态机强控机制
-- ✅ 脑皮层 RAG 记忆链（SQLite 物理索引优化 + 1000字截断熔断）
-- ✅ Janitor 后台 60 秒常驻无意识情绪退火守护
-- ✅ Midnight 睡梦记忆结晶（AI 自动脱水总结并写回冷库）
-- ✅ 国际化支持：多语言（汉语/英语/日语）物理切换选项
-- ✅ 多端工程化：Web / Electron / Android Capacitor 构建链路
-- ⏳ Canvas 视觉化可拖拽脑皮层记忆节点图 (规划中)
+## 目录结构
 
-## 🚀 快速开始
+```text
+Echo/echo-engine/              FastAPI 后端
+  main.py                        应用入口
+  database.py                    SQLAlchemy 模型
+  routers/                       API 路由
+  services/                      推理、钱包、敏感词等服务
+  repositories/                  数据访问层
 
-### 📦 生产环境 (Releases)
-对于普通用户，建议直接下载 **Releases** 发布的压缩包，解压即用：
-> [!IMPORTANT]
-> **使用注意事项：**
-> 1. **路径限制**：请勿将程序解压至包含 **中文** 的物理路径下（可能导致后端引擎拉起失败）。
-> 2. **首次启动**：首次打开程序后，请务必 **完全关闭一次再重新打开**，以完成数据库初始化与环境自动校准。
+回声Echo数字生命UI/              当前主前端
+  src/pages/                     页面
+  src/components/                业务组件与 UI 组件
+  src/api/                       前端 API client
+  src/lib/                       本地 DB、RAG、导入、OCR、i18n 等
+  android/                       Capacitor Android 工程
 
-### 1. 后端引擎 (Amber Engine)
+deploy/                          Docker Compose / Caddy 部署
+docs/                            部署、移动端构建等文档
+work.md / working.md             Codex 与 Claude 协作日志
+用户需求.md                       需求状态清单
+```
 
-```bash
-cd Amber/amber-engine
-# 创建并激活虚拟环境
+## 快速开始
+
+### 1. 后端
+
+```powershell
+cd Echo/echo-engine
 python -m venv venv
-source venv/Scripts/activate
-# 安装依赖
+.\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-# 拉起内核
 python main.py
 ```
 
-### 2. 前端界面 (Amber UI)
+默认监听：
 
-```bash
-cd Amber/main_ui
-# 安装依赖
-npm install
-# 开发模式运行
-npm run dev
+```text
+http://127.0.0.1:8000
 ```
 
-### 3. 环境配置
+可选环境变量：
 
-在项目根目录或 `Amber/amber-engine` 目录下配置相应的模型 API Key，也可通过前端设置界面录入。
+```env
+SECRET_KEY=change-me
+DATABASE_URL=sqlite:///data/amber_memory.db
+ADMIN_STATIC_TOKEN=change-me-admin-token
+PLATFORM_API_KEY=sk-...
+PLATFORM_BASE_URL=https://api.siliconflow.cn/v1
+PLATFORM_MODEL_ID=deepseek-ai/DeepSeek-V4-Pro
+```
 
----
+### 2. 前端
 
-### ⚖️ 法律免责声明 (Legal Disclaimer)
+```powershell
+cd 回声Echo数字生命UI
+npm install
+npm.cmd run dev
+```
 
-- **合规使用**：本软件仅供学习交流与研究使用。用户在使用本系统提炼分身、导入语料时，须确保已获得相关数据所有权人的明确授权，并严格遵守当地法律法规。
-- **隐私保护**：本系统所有处理过程均在本地或用户指定的 API 环境中进行。开发者不收集任何用户的聊天原始语料或隐私数据。
-- **风险提示**：本软件不提供任何形式的明示或暗示担保。用户须自行承担因使用本软件可能导致的任何数据泄露、法律纠纷或技术风险。
-- **禁止非法用途**：严禁利用本系统进行任何形式的欺诈、诱导、诈骗、侵犯他人名誉或传播违法信息。开发者对用户的任何违法违规行为概不负责。
+Windows PowerShell 如果遇到 `npm.ps1` 执行策略限制，可以使用：
 
----
+```powershell
+npm.cmd run dev
+```
 
-## 🤝 鸣谢与伙伴 (Contributors)
+### 3. 一键启动开发环境
 
-《琥珀》的诞生离不开开源社区的养分与无数深夜的灵感碰撞，在此对以下项目及伙伴致以最深切的谢意：
+```powershell
+python launch.py
+```
 
-### 💡 灵感启迪
+## Android 构建
 
-- **https://github.com/notdog1998/yourself-skill** - 本项目的可视化实现基础，感谢为其注入的最初火花。
-- **https://github.com/LC044/WeChatMsg** - 感谢其震撼心灵的前言与教科书级的开源文档排版启迪。
+需要 Android Studio、JDK 17、Android SDK。
 
-### ⚙️ 核心筑路人
+检查环境：
 
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/GANLI312">
-        <img src="https://github.com/GANLI312.png" width="100px;" alt="GANLI312"/><br />
-        <sub><b>GANLI312</b></sub>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/ecokater">
-        <img src="https://github.com/ecokater.png" width="100px;" alt="eco (ecokater)"/><br />
-        <sub><b>eco (ecokater)</b></sub>
-      </a>
-    </td>
-  </tr>
-</table>
+```powershell
+cd 回声Echo数字生命UI
+npm.cmd run android:check
+```
 
+构建 debug APK：
 
-> "如果你也想为《琥珀》注入新的灵魂，让陪伴永存，欢迎提交 Pull Request 或 Issue！"
+```powershell
+npm.cmd run android:build
+```
 
----
+输出路径：
 
-## 📬 建议与反馈
+```text
+回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk
+```
 
-如果你对《琥珀 (Amber)》有任何建议、想法或是在使用过程中遇到了物理层面的 Bug，欢迎通过以下方式联系我们：
+debug 默认连接电脑宿主机：
 
-- **Email**: [t2510458625@gmail.com](mailto:t2510458625@gmail.com)
-- **GitHub Issues**: 欢迎提交 Issue 共同打磨数字生命内核
+```env
+VITE_API_BASE_URL=http://10.0.2.2:8000
+VITE_WS_BASE_URL=ws://10.0.2.2:8000
+```
 
-*“愿所有被珍藏的数据，都能在数字世界里重逢。”*
+如果要构建连接测试服务器的 APK：
+
+```powershell
+$env:VITE_API_BASE_URL="http://129.204.151.118"
+$env:VITE_WS_BASE_URL="ws://129.204.151.118"
+npm.cmd run android:build
+```
+
+安装到模拟器：
+
+```powershell
+$adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
+& $adb install -r "回声Echo数字生命UI\android\app\build\outputs\apk\debug\app-debug.apk"
+& $adb shell monkey -p com.echo.app -c android.intent.category.LAUNCHER 1
+```
+
+release / 上架版本必须使用真实 HTTPS API 域名。
+
+## Docker 部署
+
+服务器部署配置位于 `deploy/`。基本流程：
+
+```bash
+cd deploy
+cp .env.example .env
+# 编辑 .env：SECRET_KEY / DATABASE_URL / PLATFORM_API_KEY / ADMIN_STATIC_TOKEN 等
+docker compose up -d --build
+```
+
+管理后台：
+
+```text
+http://<server>/api/admin/dashboard
+```
+
+把管理员账号 JWT 或 `ADMIN_STATIC_TOKEN` 粘贴到后台顶部 token 输入框即可进入。固定管理员令牌等同后台长期密钥，不要提交到仓库、截图或公开日志。
+
+## 常用验证
+
+后端：
+
+```powershell
+python -m compileall Echo\echo-engine
+python -c "import sys; sys.path.insert(0, r'Echo\\echo-engine'); import main; print('main import ok')"
+```
+
+前端：
+
+```powershell
+cd 回声Echo数字生命UI
+npx.cmd tsc --noEmit -p tsconfig.app.json
+npm.cmd run build
+```
+
+Android：
+
+```powershell
+cd 回声Echo数字生命UI
+npm.cmd run android:build
+```
+
+## 隐私与数据
+
+- 本地数据：人格、聊天、长期记忆、导入语料、OCR 识别结果。
+- 云端数据：账号、钱包、订单、推理消耗、错误元数据、公开分享的人格卡、兑换码状态。
+- 不上传：完整聊天全文、私有记忆库、微信/QQ 原始导出全文。
+- OCR 导入：当前 Android 侧使用 ML Kit 捆绑中文识别器，识别在设备本地完成。
+- 探索分享：只发布用户主动选择分享的人格卡字段，不包含私有聊天记录。
+
+## 合规提示
+
+- 导入聊天记录、创建他人分身或使用肖像/声音/文本资料前，应取得相关权利人的明确授权。
+- 不得用于诈骗、冒充他人、诱导、骚扰、侵犯名誉、侵犯隐私或传播违法内容。
+- 当前敏感词过滤只是基础防线，正式上线建议接入维护版词库或内容安全服务。
+- iOS 虚拟商品通常需要走 App Store IAP；国内分发还需关注 App 备案、算法备案、生成式 AI 相关要求。
+- 本项目仍处于 beta 阶段，生产/商业使用前应补齐隐私政策、用户协议、数据删除流程、安全审计和支付合规。
+
+## 重要说明
+
+- 不要把项目放在包含中文字符的安装路径下运行打包版 Electron/PyInstaller，Windows 打包或运行时可能出问题。
+- 本仓库目前仍保留部分 `Echo` 目录名，这是历史工程目录名，不影响当前产品名 Echo。
+- 旧 `Echo/main_ui` Next.js 前端基本退役，当前开发请使用 `回声Echo数字生命UI/`。
+
+## 贡献者
+
+当前维护者与贡献者：
+
+- ecokater
+
+## 灵感来源
+
+- [notdog1998/yourself-skill](https://github.com/notdog1998/yourself-skill)：早期灵感来源。
+- [LC044/WeChatMsg](https://github.com/LC044/WeChatMsg)：聊天记录导出与文档启发。
+
+## 反馈
+
+- Email: [t2510458625@gmail.com](mailto:t2510458625@gmail.com)
+- Issues: 请在 GitHub 仓库提交问题和建议。

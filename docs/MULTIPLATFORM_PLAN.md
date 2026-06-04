@@ -1,4 +1,4 @@
-# Amber 四端兼容 + 上架 规划任务书
+# Echo 四端兼容 + 上架 规划任务书
 
 > 目标平台：Windows / macOS / Android / iOS
 > 架构模式：云端服务器（FastAPI）+ 统一前端（React）

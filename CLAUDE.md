@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Amber (琥珀) is a digital life simulation system — a desktop Electron app that wraps a Next.js frontend and a Python FastAPI backend into an AI companion with persistent personality, emotion, and memory.
+Echo (回声) is a digital life simulation system — a desktop Electron app that wraps a Next.js frontend and a Python FastAPI backend into an AI companion with persistent personality, emotion, and memory.
 
 ## Running the Project
 
@@ -22,18 +22,18 @@ Three components must run simultaneously. **Critical**: `ELECTRON_RUN_AS_NODE` m
 $env:PATH = "$env:USERPROFILE\node22\node-v22.16.0-win-x64;$env:PATH"
 
 # Terminal 1 — Python backend (port 8000)
-cd Amber/amber-engine
+cd Echo/echo-engine
 python main.py
 
 # Terminal 2 — Next.js dev server (port 3000)
-cd Amber/main_ui
+cd Echo/main_ui
 npm run dev
 
 # Terminal 3 — Electron desktop window
 Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-$electron = "Amber\main_ui\node_modules\electron\dist\electron.exe"
-Set-Location "Amber\main_ui"
-& $electron "Amber\main_ui"
+$electron = "Echo\main_ui\node_modules\electron\dist\electron.exe"
+Set-Location "Echo\main_ui"
+& $electron "Echo\main_ui"
 ```
 
 Do NOT use `npm run electron:dev` — it inherits `ELECTRON_RUN_AS_NODE=1` from the shell and will fail.
@@ -41,8 +41,8 @@ Do NOT use `npm run electron:dev` — it inherits `ELECTRON_RUN_AS_NODE=1` from 
 ## Architecture
 
 ```
-Amber/
-├── amber-engine/        # Python FastAPI backend
+Echo/
+├── echo-engine/        # Python FastAPI backend
 │   ├── main.py          # 1500-line monolith: all routes, LLM logic, QQ relay, Janitor
 │   ├── database.py      # SQLAlchemy ORM: Persona, Message, PersonaCorpus tables
 │   └── config.py        # Paths; detects PyInstaller packaging vs dev
@@ -63,7 +63,7 @@ The frontend polls the backend every 3–5 seconds. In dev mode, Electron loads 
 page.tsx  →  fetch http://127.0.0.1:8000/api/*  →  FastAPI  →  SQLite
 ```
 
-### Backend Core (`amber-engine/main.py`)
+### Backend Core (`echo-engine/main.py`)
 
 **Chat processing** (`handle_chat_internal`): save message → RAG recall from `persona_corpus` (scored by character overlap, 1000-char cap) → build dynamic system prompt (emotion % injected) → `AsyncOpenAI` with exponential backoff retry (2s/4s/6s) → parse mood JSON delta from response → update emotion axes → save reply.
 
@@ -82,7 +82,7 @@ Single `"use client"` component managing all app state. Key polling loops:
 
 ## Database Schema
 
-Three SQLite tables in `amber-engine/data/amber_memory.db`:
+Three SQLite tables in `echo-engine/data/amber_memory.db`:
 - **personas** — persona profiles with emotion axes, bot credentials, override settings
 - **messages** — chat history with weight, filter flag, pin flag
 - **persona_corpus** — long-term memory fragments with weight and pin flag
@@ -95,9 +95,9 @@ Production build requires three steps:
 
 ```bash
 # 1. Compile Python backend with PyInstaller
-cd amber-engine
+cd echo-engine
 pyinstaller --onedir --name amber_core main.py
-# Output: amber-engine/dist/amber_core/amber_core.exe
+# Output: echo-engine/dist/amber_core/amber_core.exe
 
 # 2. Build Next.js static export
 cd main_ui
@@ -106,7 +106,7 @@ npm run build
 
 # 3. Package with electron-builder
 npm run dist
-# Output: main_ui/dist/Amber Setup x.x.x.exe (NSIS installer)
+# Output: main_ui/dist/Echo Setup x.x.x.exe (NSIS installer)
 ```
 
 `electron-builder` bundles `out/**/*` + `amber_core/` (as extraResource) into an NSIS installer. In packaged mode, `electron-main.js` loads `out/index.html` and spawns `amber_core.exe` instead of calling `python main.py`.

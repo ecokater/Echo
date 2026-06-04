@@ -1,6 +1,6 @@
-# Amber 反向代理。
+# Echo 反向代理。
 # SITE_ADDRESS 由 docker-compose 注入：
-#   - 设为域名(如 amber.example.com) → Caddy 自动申请并续期 Let's Encrypt HTTPS 证书
+#   - 设为域名(如 echo.example.com) → Caddy 自动申请并续期 Let's Encrypt HTTPS 证书
 #   - 默认 :80 → 纯 HTTP，仅供无域名时临时测试（移动端正式版需 HTTPS，否则被 Mixed Content 拦截）
 {$SITE_ADDRESS} {
 	encode gzip zstd

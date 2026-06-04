@@ -1,8 +1,8 @@
-# Amber 商业化重构任务计划书
+# Echo 商业化重构任务计划书
 
 > 基线决策（已确认）：**自建 FastAPI 全栈** · **Vite SPA 重建（参照设计稿）** · **国内市场优先**
-> UI 基线：`琥珀Amber数字生命UI/`（Lovable 设计稿，Vite + React18 + shadcn + Supabase 范式）
-> 后端基线：`Amber/amber-engine/`（已重构 routers/services/repositories）
+> UI 基线：`回声Echo数字生命UI/`（Lovable 设计稿，Vite + React18 + shadcn + Supabase 范式）
+> 后端基线：`Echo/echo-engine/`（已重构 routers/services/repositories）
 > 文档版本：v1.0
 
 ---
@@ -15,7 +15,7 @@
 | 中栏 flex-1 | 主聊天：TopNav(**碎片余额徽章**/明暗/控制台) + 气泡(normal/**主动查岗**/**情绪共鸣**) + 输入区(+号: 图片/记忆截断/唤起记忆节点/情绪快照) | 全屏聊天 + 底部4标签(对话/探索/记忆/我的) |
 | 右栏 320px | **数字生命控制台**：情绪状态机(亲密度/活跃度/好奇心) + 参数微调(回应温度/主动性/记忆深度) + 记忆代谢图谱(预留) | 收进控制台页 |
 
-**设计语言**：Glassmorphism 2.0（`.glass`/`.glass-strong` backdrop-blur 24-40px）+ OKLCH 琥珀色系（H45）+ `--fragment` 商业化专属辉光色 + 明暗双主题 + framer-motion 弹性动画。
+**设计语言**：Glassmorphism 2.0（`.glass`/`.glass-strong` backdrop-blur 24-40px）+ OKLCH 回声色系（H45）+ `--fragment` 商业化专属辉光色 + 明暗双主题 + framer-motion 弹性动画。
 
 **核心商业化**：记忆碎片（Memory Fragment）——静默式变现，余额角标 + 耗尽柔和引导弹窗，绝不打断沉浸感。
 
@@ -29,7 +29,7 @@
 │    ├─ FastAPI (gunicorn+uvicorn workers)                      │
 │    │    routers/  services/  repositories/                   │
 │    │    + auth(JWT)  + wallet(碎片)  + billing(支付)          │
-│    │    + Amber 引擎: chat/RAG/janitor/情绪机                │
+│    │    + Echo 引擎: chat/RAG/janitor/情绪机                │
 │    ├─ PostgreSQL (用户/碎片/订单/persona/message/corpus)     │
 │    ├─ Redis (会话/限流/分布式锁-碎片原子扣减)                 │
 │    └─ MinIO/OSS (头像/语料/图片)                              │
@@ -113,7 +113,7 @@ POST /api/billing/verify/apple     # iOS 收据校验
 
 ## 5. 前端工作包 WP-F（Vite SPA 重建）
 
-以 `琥珀Amber数字生命UI/` 为基座，移植现有业务组件，对接 FastAPI。
+以 `回声Echo数字生命UI/` 为基座，移植现有业务组件，对接 FastAPI。
 
 | 编号 | 任务 | 来源/目标 | 工时 |
 |------|------|----------|------|

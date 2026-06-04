@@ -11,21 +11,21 @@ Guidance for Codex and other coding agents working in this repository.
 
 ## Repository Layout
 
-- `Amber/amber-engine/` - Python FastAPI backend.
+- `Echo/echo-engine/` - Python FastAPI backend.
   - `main.py` starts the backend application.
   - `database.py`, `schemas.py`, `deps.py`, `state.py`, and `ws_manager.py` hold shared backend infrastructure.
   - `routers/`, `services/`, and `repositories/` contain the modularized API, domain logic, and data access code.
-- `Amber/main_ui/` - Next.js 16 + Electron 36 desktop app.
+- `Echo/main_ui/` - Next.js 16 + Electron 36 desktop app.
   - `app/page.tsx` is the main client-side UI orchestrator.
   - `components/amber/` contains domain UI components.
   - `components/ui/` contains shadcn/Radix primitives.
   - `electron-main.js` launches the desktop shell and backend in packaged mode.
   - `preload.js` exposes Electron IPC helpers.
-- The top-level `Amber Digital Life UI` directory with the Chinese name - Vite + React + Capacitor/Electron UI variant.
+- The top-level `Echo Digital Life UI` directory with the Chinese name - Vite + React + Capacitor/Electron UI variant.
   - `src/` contains React app code, API clients, pages, stores, and UI components.
   - `capacitor.config.ts`, `android/`, and `ios/` support mobile builds.
 - `docs/` and `Readme/` contain project documentation.
-- `launch.py` and the local Amber startup PowerShell/batch scripts are launch helpers.
+- `launch.py` and the local Echo startup PowerShell/batch scripts are launch helpers.
 
 ## Working Tree Safety
 
@@ -50,7 +50,7 @@ Guidance for Codex and other coding agents working in this repository.
 
 ## Backend Commands
 
-From `Amber/amber-engine/`:
+From `Echo/echo-engine/`:
 
 ```powershell
 python -m venv venv
@@ -74,19 +74,19 @@ $env:PATH = "$env:USERPROFILE\node22\node-v22.16.0-win-x64;$env:PATH"
 Run the three desktop components in separate terminals:
 
 ```powershell
-cd Amber/amber-engine
+cd Echo/echo-engine
 python main.py
 ```
 
 ```powershell
-cd Amber/main_ui
+cd Echo/main_ui
 npm run dev
 ```
 
 ```powershell
 Remove-Item Env:ELECTRON_RUN_AS_NODE -ErrorAction SilentlyContinue
-$electron = "Amber\main_ui\node_modules\electron\dist\electron.exe"
-Set-Location "Amber\main_ui"
+$electron = "Echo\main_ui\node_modules\electron\dist\electron.exe"
+Set-Location "Echo\main_ui"
 & $electron .
 ```
 
@@ -109,22 +109,22 @@ The Vite app uses React, TypeScript, Tailwind, Radix/shadcn-style primitives, Zu
 Production packaging for the Next.js desktop app:
 
 ```powershell
-cd Amber/amber-engine
+cd Echo/echo-engine
 pyinstaller --onedir --name amber_core main.py
 ```
 
 ```powershell
-cd Amber/main_ui
+cd Echo/main_ui
 npm run build
 npm run dist
 ```
 
-`electron-builder` expects `Amber/amber-engine/dist/amber_core/` and bundles it as an extra resource.
+`electron-builder` expects `Echo/echo-engine/dist/amber_core/` and bundles it as an extra resource.
 
 ## Architecture Notes
 
 - The frontend talks to `http://127.0.0.1:8000`.
-- The backend stores runtime data in SQLite under `Amber/amber-engine/data/`.
+- The backend stores runtime data in SQLite under `Echo/echo-engine/data/`.
 - Chat flow includes message persistence, memory recall, dynamic persona/emotion prompt construction, LLM response handling, mood JSON parsing, emotion updates, and reply persistence.
 - The Janitor background task handles emotion annealing, memory incubation, and corpus pruning.
 - QQ relay functionality is backend-owned and depends on per-persona credentials.
@@ -132,6 +132,6 @@ npm run dist
 ## Verification
 
 - For backend changes, prefer targeted Python checks or starting `python main.py` when practical.
-- For `Amber/main_ui` changes, run `npm run lint` or `npm run build` depending on risk.
+- For `Echo/main_ui` changes, run `npm run lint` or `npm run build` depending on risk.
 - For changes in the top-level Vite UI directory with the Chinese name, run `npm run lint` or `npm run build` depending on risk.
 - If a command fails, inspect stderr, fix actionable issues, and retry before handing the problem back.

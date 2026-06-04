@@ -1,49 +1,143 @@
-# 前端部署指南 (Amber UI)
+# Echo Frontend Guide
 
-<p align="center">
-  <a href="ReadmeChinese.md">简体中文</a> | 
-  <a href="ReadmeEnglish.md">English</a> | 
-  <a href="ReadmeJapanese.md">日本語</a> | 
-  <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
-  <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
-</p>
+The current Echo frontend lives in `回声Echo数字生命UI/`. The directory name is historical; the product is Echo.
 
-Amber UI 是本系统的交互层，基于 Next.js 14 构建，提供了沉浸式的数字生命管理体验。
+The app is built with Vite, React, TypeScript, Tailwind CSS, Zustand, IndexedDB, Capacitor, and Electron.
 
-## ⚙️ 环境要求
-- **Node.js**: 18.17.0 或更高版本
-- **npm**: 9.x 或更高版本
+## Run locally
 
-## 🚀 启动步骤
-
-### 1. 准备工作
-进入前端根目录：
-```bash
-cd Amber/Amber/main_ui
-```
-
-### 2. 安装依赖
-```bash
+```powershell
+cd 回声Echo数字生命UI
 npm install
+npm.cmd run dev
 ```
-*注意：如果安装速度慢，建议使用镜像源或执行 `npm i --legacy-peer-deps`。*
 
-### 3. 环境变量
-本项目前端默认指向 `http://localhost:8000` (后端默认地址)。
-若需修改后端连接地址，请在相关组件中搜索 `API_BASE_URL` 进行调整。
+If PowerShell blocks `npm.ps1`, use `npm.cmd`.
 
-### 4. 运行开发服务器
-```bash
-npm run dev
+## Build
+
+```powershell
+npx.cmd tsc --noEmit -p tsconfig.app.json
+npm.cmd run build
 ```
-启动成功后，请访问 [http://localhost:3000](http://localhost:3000)。
 
-## 🎨 视觉说明
-- **Logo**: 位于 `public/logo.png`，您可以自行替换。
-- **主题**: 系统支持响应式布局，完美适配不同尺寸的显示器。
-- **交互**: 侧边栏集成了“提炼向导”、“实时聊天”、“数据监控”与“系统设置”。
+## Android
 
-## 🛠️ 故障排查
-- **Failed to fetch**: 这种报错通常是因为后端 Python 服务未启动，或端口被占用。请确保后端已成功运行在 8000 端口。
-- **Key 重复报错**: 若控制台出现 React Key 重复提示，请刷新页面。这是由于本地缓存与轮询同步瞬时冲突导致的，不影响功能使用。
+```powershell
+npm.cmd run android:check
+npm.cmd run android:build
+```
+
+The app package is:
+
+```text
+com.echo.app
+```
+
+To point the debug build to the current test server:
+
+```powershell
+$env:VITE_API_BASE_URL="http://129.204.151.118"
+$env:VITE_WS_BASE_URL="ws://129.204.151.118"
+npm.cmd run android:build
+```
+
+## Main source areas
+
+| Path | Purpose |
+|------|---------|
+| `src/pages/Chat.tsx` | Main chat shell, tabs, account area, send flow |
+| `src/pages/CreatePersona.tsx` | Persona creation and preset import |
+| `src/components/MemoryPanel.tsx` | Local memory management |
+| `src/components/ExplorePanel.tsx` | Explore marketplace UI |
+| `src/components/ChatImportModal.tsx` | `.txt`, paste, and OCR import UI |
+| `src/api/` | Backend API clients |
+| `src/lib/localdb.ts` | IndexedDB stores for personas, messages, corpus |
+| `src/lib/localRag.ts` | Local retrieval and context assembly |
+| `src/lib/janitor.ts` | Local emotion annealing and memory summary trigger |
+| `src/lib/chatImport.ts` | WeChat/QQ text cleanup and chunking |
+| `src/lib/ocr.ts` | Android local OCR integration |
+| `src/lib/i18n.ts` | Chinese/English dictionaries |
+| `src/lib/moderation.ts` | Frontend sensitive-word filtering |
+
+## Local-first chat flow
+
+1. User sends a message.
+2. Message is written to local IndexedDB.
+3. Frontend retrieves recent local messages and relevant local memories.
+4. Frontend sends temporary context to `/api/inference/chat`.
+5. Backend returns reply and metadata.
+6. Frontend writes the reply locally and updates persona mood.
+7. Local Janitor may later summarize older messages into local corpus.
+
+## Import flow
+
+Text import:
+
+1. User selects a `.txt` file or pastes chat text.
+2. `parseChatExport()` removes timestamps, headers, media placeholders, and noise.
+3. `chunkText()` splits cleaned text into about 500-character blocks.
+4. `corpusStore.bulkAdd()` writes blocks to the selected persona's local memory.
+
+OCR import:
+
+1. Android user chooses a screenshot from the album.
+2. ML Kit bundled Chinese text recognizer extracts text locally.
+3. Extracted text is appended to the same import pipeline.
+4. Nothing is uploaded during OCR recognition.
+
+## Account area
+
+The Account tab includes:
+
+- wallet balance
+- recharge entry
+- usage history
+- orders
+- redeem-code activation
+- help and about panels
+- language and settings entry
+
+## Internationalization
+
+`src/lib/i18n.ts` holds the dictionary. `src/stores/locale.ts` persists the selected language in `echo_locale`.
+
+When adding UI strings:
+
+1. Add keys to the dictionary.
+2. Use `useI18n()` in components.
+3. Keep generated/user content untranslated.
+
+## Styling
+
+Echo currently uses a dark, amber-accented interface. The historical class name `bubble-amber-rim` remains for compatibility. Avoid renaming storage keys, IndexedDB names, or legacy CSS class names unless a migration is implemented.
+
+## Safety
+
+Frontend moderation is a convenience layer, not the only safety layer. The backend also checks sensitive words before billing. Do not remove backend moderation when changing frontend logic.
+
+## Verification checklist
+
+Before handing off frontend changes:
+
+```powershell
+npx.cmd tsc --noEmit -p tsconfig.app.json
+npm.cmd run build
+```
+
+For Android-facing changes:
+
+```powershell
+npm.cmd run android:build
+```
+
+Then install to an emulator or real device and check:
+
+- login
+- create persona
+- chat
+- memory tab
+- explore tab
+- account tab
+- import modal
+- OCR picker if native Android is affected

@@ -1,169 +1,71 @@
-<p align="center">
-  <strong>Visual implementation based on the “Immortal.skill” project</strong>
-</p>
-<h1 align="center">Amber - Digital Life Simulation</h1>
-<p align="center">
-  <code>v0.1.1-beta</code> • <code>Dual-System Cognitive Engine</code>
-</p>
+# Echo
+
+Echo is a local-first digital-life companion app. It lets users create, talk to, organize, and extend personal digital personas while keeping private conversations, persona data, and long-term memories on the user's own device by default.
+
+The project has been renamed to **Echo**. Some folders still contain historical names for compatibility with existing paths and local data, but the product name is Echo.
+
+## Links
+
+- [简体中文](ReadmeChinese.md)
+- [日本語](ReadmeJapanese.md)
+- [Quick Start](QUICK_START.md)
+- [Backend Guide](BACKEND_GUIDE.md)
+- [Frontend Guide](FRONTEND_GUIDE.md)
+
+## Real App Screenshots
+
+These screenshots are from the current Android Echo debug build, package `com.echo.app`.
 
 <p align="center">
-  <a href="ReadmeChinese.md">简体中文</a> | 
-  <a href="ReadmeEnglish.md">English</a> | 
-  <a href="ReadmeJapanese.md">日本語</a>
-  <br>
-  <a href="QUICK_START.md">快速开始 (Quick Start)</a> | 
-  <a href="BACKEND_GUIDE.md">后端指南 (Backend)</a> | 
-  <a href="FRONTEND_GUIDE.md">前端指南 (Frontend)</a>
-</p>
-
-## 💬 Foreword
-
-"I firmly believe that what is meaningful is never the cold chat software and communication protocols, but the vivid and profound stories hidden behind the dialog boxes, written together by you and 'her'.
-
-The original intention of developing 'Amber' was to let **AI (Love) replace people who cannot be with us for various reasons**. Whether it is physical isolation due to reality, regrets of passing by, or the powerlessness brought by time and distance—the pain of not being able to spend day and night together should not end in complete oblivion and silence.
-
-In the future, everyone can have the long-term companionship of an independent AI. And your past life traces and chat data will truly give it precious memories of your past. 'Amber' through a dual-system cognitive architecture and permanent life metabolism, tries to preserve and nurture these precious emotional memories, and let them silently 'come alive' in the background, becoming a vivid existence that follows the network cable to check in, debates with a real personality, and gets jealous or aggrieved.
-
-'*Those daily conversations that flow like resin and are fleeting, after being wrapped in "emotional intensity" and pressured by the "forgetting mechanism", eventually condense into an eternal existence across time and space in the depths of the formation.*'"
-
-## 📝 Project Overview
-
-**Amber** is a digital life experimental system focused on **emotional companionship and personality simulation**.
-
-Unlike traditional general-purpose chatbots, Amber aims to physically simulate human cognitive patterns, transforming cold language models into independent personas with "personality stability" and "long-term memory." It is not just a chat window, but a digital life carrier running in the background with its own metabolic mechanisms.
-
-The project addresses anthropomorphic experiences across three core dimensions:
-1. **The "Skeleton" of Personality**: Through a three-axis personality matrix, ensuring the persona maintains consistent behavioral logic in any conversation, rather than random AI replies.
-2. **The "Precipitation" of Memory**: Simulating the human sleep mechanism, daily trivial conversations are automatically "dehydrated and distilled" into long-term memory imprints, achieving a true "the more we chat, the more I understand you" experience.
-3. **The "Entity" of Survival**: Keeping one persona, memory, and emotional state available across web, desktop, and mobile clients.
-
-## 🖼️ Project Screenshots
-
-<p align="center">
-  <img src="image/main_ui.png" alt="Amber Main UI" width="800px" />
-  <br>
-  <em>[Fig 1] Amber Core Interaction Interface: A minimalist carrier for digital life</em>
+  <img src="image/echo_chat.png" alt="Echo chat screen" width="260" />
+  <img src="image/echo_explore.png" alt="Echo explore screen" width="260" />
+  <img src="image/echo_memory.png" alt="Echo memory screen" width="260" />
 </p>
 
 <p align="center">
-  <img src="image/settings_center.png" alt="Settings Center" width="800px" />
-  <br>
-  <em>[Fig 2] Full-stack Settings Center: Physical integration of API configuration, kernel engine parameters, and personal Profile</em>
+  <img src="image/echo_me.png" alt="Echo account screen" width="260" />
+  <img src="image/echo_import.png" alt="Echo import screen" width="260" />
 </p>
 
-<p align="center">
-  <img src="image/distillation.tsx1.png" alt="Distillation Step 1" width="800px" />
-  <img src="image/distillation.tsx2.png" alt="Distillation Step 2" width="800px" />
-  <img src="image/distillation.tsx3.png" alt="Distillation Step 3" width="800px" />
-  <img src="image/distillation.tsx4.png" alt="Distillation Step 4" width="800px" />
-  <img src="image/distillation.tsx5.png" alt="Distillation Step 5" width="800px" />
-  <br>
-  <em>[Fig 3] Consciousness Remolding (Distillation): The whole process of refinement from relationship definition, subjective impression, memory materials to personality trait preview and emotional benchmark fine-tuning</em>
-</p>
+## Highlights
 
-## 🧠 Architecture
+- Local-first data: personas, chat history, private memories, and imported transcripts stay in local IndexedDB.
+- Stateless inference proxy: the server receives only temporary context and does not persist full chats or private memory.
+- Multi-platform UI: the same React/Vite app runs on Web, Electron, and Android through Capacitor.
+- Long-term memory tools: view, search, pin, delete, manually add, and automatically summarize memories.
+- Chat import: supports WeChat/QQ `.txt` import, pasted text, and Android local OCR for screenshot-based import.
+- Explore marketplace: users can publish public persona cards and install shared personas locally.
+- Wallet and redeem codes: admins can generate redeem codes; users activate them from the account screen.
+- Internationalization: Chinese and English UI switching.
+- Safety baseline: frontend sensitive-word blocking plus backend pre-billing moderation.
+- Admin dashboard: usage, orders, share moderation, model pricing, and redeem-code tools.
 
-- **⚡ System 1 (Instant Behavioral State Machine)**: Native implementation of Anger, Humor, and Empathy three-axis personality control matrix, making the persona's text replies have behavioral mapping in their bones.
-- **🧠 System 2 (Cerebral Cortex Long-term Memory Chain)**: Uses SQLite high-frequency field physical index optimization, providing 0.4ms extreme response and 1000-word RAG dynamic fusion interception mechanism, allowing the chat to automatically retrieve core memories.
-- **🧹 Janitor (Unconscious Life Metabolism)**: Resident Asyncio background daemon. Spontaneously performs instantaneous emotional linear annealing in silence to ensure personality stability.
-- **⏳ Memory Incubation (Dream Memory Crystallization)**: Automatically triggers fault scanning. Uses LLM to denoise and distill original chat streams into System 2 imprints.
-- **📡 Multi-Client Survival**: Carries the same persona, memory, and emotional state across web, desktop, and mobile clients.
+## Data Boundary
 
-## 🍉 Core Roadmap
+| Data | Stored in |
+|------|-----------|
+| Personas, chats, private memories, imported transcripts | User device |
+| OCR recognition result | User device |
+| Account, wallet, orders, usage audit | Server |
+| Explore persona cards | Server, only public fields explicitly published by users |
+| Redeem-code state | Server |
 
-- ✅ Instant emotion three-axis (Anger/Humor/Empathy) state machine control
-- ✅ Cerebral cortex RAG memory chain (SQLite optimization + 1000-word truncation)
-- ✅ Janitor background 60s emotional annealing daemon
-- ✅ Midnight dream memory crystallization (AI automatic dehydration and summary)
-- ✅ i18n support: Multi-language (CN/EN/JP) physical switching
-- ✅ Multi-platform engineering: Web / Electron / Android Capacitor build flow
-- ⏳ Canvas visualization of cerebral cortex memory nodes (Planned)
+Echo does not persist full private chats or private memories in the cloud. For inference, the frontend sends only the temporary context required for the current request.
 
-## 🚀 Quick Start
+## Tech Stack
 
-### 📦 Production (Releases)
-For general users, it is recommended to download the compressed package from **Releases**, unzip and use it directly:
-> [!IMPORTANT]
-> **Notes for Use:**
-> 1. **Path Limitation**: Do NOT extract the program to a physical path containing **Chinese characters** (this may cause the backend engine to fail to start).
-> 2. **First Launch**: After opening the program for the first time, please be sure to **completely close it once and then reopen it** to complete database initialization and automatic environment calibration.
+- Frontend: Vite, React, TypeScript, Tailwind CSS, Capacitor, Electron
+- Local data: IndexedDB
+- Backend: FastAPI, SQLAlchemy, SQLite/PostgreSQL
+- Inference: OpenAI-compatible APIs, currently defaulting to SiliconFlow + `deepseek-ai/DeepSeek-V4-Pro`
+- Android OCR: bundled ML Kit Chinese text recognizer, offline-capable
 
-### 1. Backend Engine (Amber Engine)
+## Contributor
 
-```bash
-cd amber-engine
-# Create and activate virtual environment
-python -m venv venv
-source venv/bin/activate # Windows: venv\Scripts\activate
-# Install dependencies
-pip install -r requirements.txt
-# Launch kernel
-python main.py
-```
+Current maintainer and contributor:
 
-### 2. Frontend Interface (Amber UI)
+- ecokater
 
-```bash
-cd main_ui
-# Install dependencies
-npm install
-# Run in dev mode
-npm run dev
-```
+## Compliance Notice
 
-### 3. Environment Configuration
-
-Configure the model API key in the project root or `amber-engine` directory, or enter it through the frontend settings UI.
-
----
-
-### ⚖️ Legal Disclaimer
-
-- **Compliant Use**: This software is for learning, communication, and research purposes only. Users must ensure they have obtained explicit authorization from the data owners and strictly comply with local laws and regulations.
-- **Privacy Protection**: All processing is done locally or in user-specified API environments. Developers do not collect original chat data or private information.
-- **Risk Warning**: No warranties of any kind. Users assume all data leakage, legal dispute, or technical risks.
-- **Prohibit Illegal Use**: Strictly prohibited to use this system for fraud, induction, scamming, infringing on others' reputation, or spreading illegal information. Developers are not responsible for any illegal acts of users.
-
----
-
-## 🤝 Contributors & Partners
-
-The birth of "Amber" is inseparable from the nourishment of the open-source community and countless late-night inspirations. We would like to express our deepest gratitude to the following projects and partners:
-
-### 💡 Inspirations
-- **https://github.com/notdog1998/yourself-skill** - The basis for the visualization implementation of this project. Thank you for the initial spark.
-- **https://github.com/LC044/WeChatMsg** - Thanks for the heart-shaking foreword and the textbook-level open-source documentation layout inspiration.
-
-### ⚙️ Core Contributors
-
-<table>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/GANLI312">
-        <img src="https://github.com/GANLI312.png" width="100px;" alt="GANLI312"/><br />
-        <sub><b>GANLI312</b></sub>
-      </a>
-    </td>
-    <td align="center">
-      <a href="https://github.com/ecokater">
-        <img src="https://github.com/ecokater.png" width="100px;" alt="eco (ecokater)"/><br />
-        <sub><b>eco (ecokater)</b></sub>
-      </a>
-    </td>
-  </tr>
-</table>
-
-*(Click on the avatar to go directly to the partner's GitHub home page)*
-
-> "If you also want to inject new soul into 'Amber' and make companionship last forever, welcome to submit a Pull Request or Issue!"
-
----
-
-## 📬 Feedback & Suggestions
-
-If you have any suggestions, ideas, or encounter bugs for "Amber", feel free to contact us:
-
-- **Email**: [t2510458625@gmail.com](mailto:t2510458625@gmail.com)
-- **GitHub Issues**: Welcome to submit Issues to polish the digital life core together.
-
-*"May all the precious data meet again in the digital world."*
+Echo is a beta-stage research and personal-use project. Before importing chat records, creating a persona based on another person, or using personal likeness and private data, users must obtain explicit authorization from the relevant rights holders. Do not use this project for impersonation, fraud, harassment, privacy invasion, defamation, or illegal content.
