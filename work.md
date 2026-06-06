@@ -301,3 +301,11 @@ npm.cmd run android:build
 - APK：`Echo-Clay-UI/android/app/build/outputs/apk/debug/app-debug.apk`；`回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk`。
 - 还差什么：尚未在模拟器和真实手机启动器上确认不同厂商图标遮罩效果；Android 启动器可能需要卸载旧版后重装才能刷新缓存。
 - 下一步 process：安装目标 APK，检查圆形、圆角矩形和桌面快捷方式图标；正式发布前生成签名 release APK/AAB。
+
+### 2026-06-06 · Codex · 当前工程 GitHub 发布与 iOS Mac 接手
+
+- 已完成：将当前完整工程提交并推送到 `https://github.com/ecokater/Echo.git` 的 `refactor/architecture` 分支，主工程提交为 `f2ab19d`。
+- 已完成：新增 `回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md`，记录当前 iOS 状态、已知阻塞、Mac 环境准备、Xcode/CocoaPods 命令、模拟器/真机验收、Apple IAP、隐私清单、签名与 TestFlight 流程。
+- 安全检查：未提交真实 API key、管理员令牌、私钥、证书、Provisioning Profile、APK、Pods 或构建目录；Clay UI 的 `.env.production` 仅包含占位域名。
+- 还差什么：iOS 尚未在 macOS/Xcode 上完成首次编译、模拟器启动和真机 OCR 验收。
+- 下一步 process：Mac 端 Codex checkout `refactor/architecture`，先阅读 `回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md`，执行 `npm install -> npm run build -> npx cap sync ios -> pod install -> xcodebuild`。
