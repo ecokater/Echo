@@ -1,0 +1,97 @@
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { X, Upload, FileText, Check, Loader2, Image as ImageIcon } from "lucide-react";
+import { parseChatExport, chunkText, importChatToPersona, pickChatFile } from "@/lib/chatImport";
+import { recognizeImageFromAlbum, ocrAvailable, OCR_CANCELLED } from "@/lib/ocr";
+import { useI18n } from "@/lib/i18n";
+
+/** Import WeChat/QQ chat export (.txt or pasted) into a persona's local memory. */
+export default function ChatImportModal({
+  open, onClose, personaId, personaName, onDone,
+}: { open: boolean; onClose: () => void; personaId: string | null; personaName?: string; onDone?: () => void }) {
+  const { t } = useI18n();
+  const [raw, setRaw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(0);
+  const [ocring, setOcring] = useState(false);
+  const [ocrNote, setOcrNote] = useState("");
+  const canOcr = ocrAvailable();
+
+  const cleaned = raw.trim() ? parseChatExport(raw) : "";
+  const chunkCount = cleaned ? chunkText(cleaned).length : 0;
+
+  const loadFile = async () => { const txt = await pickChatFile(); if (txt) setRaw(txt); };
+  const loadImage = async () => {
+    if (ocring) return;
+    setOcring(true); setOcrNote("");
+    try {
+      const text = await recognizeImageFromAlbum();
+      if (text) setRaw((prev) => (prev.trim() ? prev.trimEnd() + "\n" + text : text));
+      else setOcrNote(t("imp.ocr_empty"));
+    } catch (e: unknown) {
+      if ((e as { message?: string })?.message !== OCR_CANCELLED) setOcrNote(t("imp.ocr_fail"));
+    } finally { setOcring(false); }
+  };
+  const run = async () => {
+    if (!personaId || !raw.trim() || busy) return;
+    setBusy(true);
+    try {
+      const n = await importChatToPersona(personaId, raw, true);
+      setDone(n);
+      onDone?.();
+      setTimeout(() => { setRaw(""); setDone(0); onClose(); }, 1200);
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div className="fixed inset-0 z-50 grid place-items-center p-6"
+          style={{ background: "color-mix(in srgb, var(--background) 55%, transparent)", backdropFilter: "blur(8px)" }}
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}
+          onClick={onClose}>
+          <motion.div className="w-full max-w-md rounded-3xl glass-strong p-6 shadow-2xl"
+            initial={{ opacity: 0, y: 34, scale: 0.94 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 420, damping: 34, mass: 0.86 }}
+            onClick={(e) => e.stopPropagation()}>
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="flex items-center gap-2 text-sm font-semibold"><FileText size={15} className="text-accent" /> {t("imp.title")}{personaName ? ` · ${personaName}` : ""}</h3>
+              <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted/60"><X size={16} /></button>
+            </div>
+            <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+              {t("imp.desc")}
+            </p>
+
+            <div className="mb-3 space-y-2">
+              <button onClick={loadFile}
+                className="flex w-full items-center justify-center gap-2 rounded-xl glass px-3 py-2.5 text-sm transition-transform active:scale-[0.98]">
+                <Upload size={15} className="text-accent" /> {t("imp.pick")}
+              </button>
+              {canOcr && (
+                <button onClick={loadImage} disabled={ocring}
+                  className="flex w-full items-center justify-center gap-2 rounded-xl glass px-3 py-2.5 text-sm transition-transform active:scale-[0.98] disabled:opacity-50">
+                  {ocring ? <Loader2 size={15} className="animate-spin text-accent" /> : <ImageIcon size={15} className="text-accent" />}
+                  {ocring ? t("imp.ocring") : t("imp.ocr")}
+                </button>
+              )}
+              {canOcr && <p className="text-center text-[10px] text-muted-foreground">{ocrNote || t("imp.ocr_hint")}</p>}
+            </div>
+
+            <textarea value={raw} onChange={(e) => setRaw(e.target.value)} rows={6}
+              placeholder={t("imp.paste")}
+              className="w-full resize-none rounded-xl glass px-4 py-2.5 text-sm outline-none placeholder:text-muted-foreground focus:ring-2 focus:ring-ring/30" />
+
+            {raw.trim() && <p className="mt-2 text-[11px] text-muted-foreground">{t("imp.preview_pre")} <span className="text-accent">{chunkCount}</span> {t("imp.preview_post")}</p>}
+
+            <button onClick={run} disabled={busy || !personaId || chunkCount === 0}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold fragment-glow transition-transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50">
+              {busy ? <Loader2 size={16} className="animate-spin" /> : done > 0 ? <Check size={16} /> : null}
+              {busy ? t("imp.importing") : done > 0 ? t("imp.done", { n: done }) : t("imp.submit")}
+            </button>
+            {!personaId && <p className="mt-2 text-center text-[11px] text-muted-foreground">{t("common.pick_persona")}</p>}
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}

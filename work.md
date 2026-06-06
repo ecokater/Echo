@@ -264,3 +264,40 @@ Android：
 cd 回声Echo数字生命UI
 npm.cmd run android:build
 ```
+
+### 2026-06-06 · Codex · Echo Claymorphism 独立前端
+
+- 已完成：新建 `Echo-Clay-UI/` 独立 Vite + React 前端，不修改现有生产 UI。
+- 已完成：实现对话、探索、记忆、我的四个主页面，包含分身切换、消息发送、探索筛选、记忆搜索、个人设置入口及桌面/手机响应式导航。
+- 已完成：建立 Claymorphism 视觉系统，包含黏土头像、双重内外阴影、凹陷输入槽、物理按压反馈、柔和回弹与减少动态效果适配。
+- 验证：`npm.cmd run build` 通过；桌面与移动尺寸截图检查完成；开发预览运行于 `http://127.0.0.1:4174`。
+- 还差什么：当前为高保真交互前端，使用演示数据，尚未接入现有 Echo 鉴权、本地数据库、推理和计费 API。
+- 下一步 process：确认视觉方向后，将现有 `回声Echo数字生命UI` 的业务模块按页面逐步接入 `Echo-Clay-UI`，优先完成登录、分身、本地聊天与记忆主流程。
+
+### 2026-06-06 · Codex · Echo Clay UI 全量功能迁移
+
+- 已完成：`Echo-Clay-UI/` 从高保真原型升级为现有 UI 的完整功能副本；迁入全部业务源码、API 客户端、本地数据库、组件、页面、Android/iOS/Capacitor 配置、OCR 补丁、公共资源和构建脚本。
+- 已完成：保留注册登录、分身创建/头像/预设/蒸馏、真实聊天与本地记忆、探索发布/安装、TXT/OCR 导入、充值、钱包、兑换码、用量、订单、设置、多语言、主题及退出清空等现有能力。
+- 已完成：新增 `src/clay-theme.css` 作为独立视觉覆盖层；首次启动默认浅色 Clay，手动深色选择仍持久化；现有生产 UI 未修改。
+- 完整性验证：现有端与新端功能源码文件数 `88 / 88`；源码差异仅 Clay 主题文件、主题导入和 4 个页面的默认浅色参数。
+- 构建验证：`npx.cmd tsc --noEmit -p tsconfig.app.json`、`npm.cmd run build`、`npm.cmd run android:check`、`npm.cmd run android:build` 全部通过。
+- APK：`Echo-Clay-UI/android/app/build/outputs/apk/debug/app-debug.apk`。
+- 还差什么：未使用真实账号和可用后端逐项人工点击全部云端功能；支付微信/支付宝仍沿用现有骨架状态。
+- 下一步 process：连接测试后端完成注册登录→创建分身→聊天→记忆→探索→充值/兑换码的真机闭环验收，再决定是否用新目录替换主前端目录。
+
+### 2026-06-06 · Codex · Echo Clay App 图标五方向选型稿
+
+- 已完成：使用内置 image generation 生成 5 个 Claymorphism App 图标方向，保存到 `Echo-Clay-UI/design/app-icons/`。
+- 方向：回声涟漪、陪伴气泡、数字生命、记忆萌芽、Echo 徽记；均采用淡紫、蜂蜜黄、粉彩与哑光黏土材质。
+- 已完成：生成选型总览 `echo-app-icon-options.png` 和方向说明 `README.md`。
+- 还差什么：用户尚未选择最终方向；候选图仍未替换 Android/iOS 正式图标资源。
+- 下一步 process：用户选择编号后，针对选中方向优化小尺寸识别和安全区，再输出 Android adaptive icon 与 iOS AppIcon 全尺寸资源。
+
+### 2026-06-06 · Codex · Digital Life 正式软件图标应用
+
+- 已完成：选定 `03-digital-life.png`，清理原图黑色边角并生成 1024x1024 正式母版 `Echo-Clay-UI/design/app-icons/selected/echo-digital-life-master.png`。
+- 已完成：同步替换 `Echo-Clay-UI` 与 `回声Echo数字生命UI` 的 Android legacy/round/adaptive launcher、iOS AppIcon、Web favicon、Electron 窗口图标，并替换 `Echo/main_ui/public` 桌面图标资源；移除 `Echo/main_ui/app/layout.tsx` 中可能覆盖新图标的旧 SVG 入口。
+- 验证：`Echo-Clay-UI`、`回声Echo数字生命UI`、`Echo/main_ui` production build 通过；两个 Android debug APK build 通过。
+- APK：`Echo-Clay-UI/android/app/build/outputs/apk/debug/app-debug.apk`；`回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk`。
+- 还差什么：尚未在模拟器和真实手机启动器上确认不同厂商图标遮罩效果；Android 启动器可能需要卸载旧版后重装才能刷新缓存。
+- 下一步 process：安装目标 APK，检查圆形、圆角矩形和桌面快捷方式图标；正式发布前生成签名 release APK/AAB。

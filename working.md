@@ -10,9 +10,16 @@
 
 | 执行者 | 任务 | 锁定文件/模块 | 开始时间 |
 |--------|------|--------------|---------|
-| (空闲) | — | — | — |
+| Codex | 提交当前工程到 GitHub，并生成 iOS Mac 接手指南 | `回声Echo数字生命UI/ios/**`, `Echo-Clay-UI/ios/**`, `work.md`, `working.md`, Git repository | 2026-06-06 |
 
 ## 🟢 最近完成 (RECENTLY DONE)
+
+- 2026-06-06 · Codex · **Digital Life 正式软件图标已应用**：已清理选中图标边缘并生成正式母版，同步替换 Clay UI、现有 Vite UI 的 Android/iOS/Web/Electron 图标与 `Echo/main_ui` 桌面图标，并移除桌面 Web 元数据中的旧 SVG 图标入口；三个前端 build 与两个 Android debug APK build 均通过。剩余为模拟器/真机启动器视觉确认。锁已释放。
+- 2026-06-06 · Codex · **Echo Clay App 图标五方向选型稿完成**：生成回声涟漪、陪伴气泡、数字生命、记忆萌芽、Echo 徽记五个候选与选型总览，保存于 `Echo-Clay-UI/design/app-icons/`。待用户选择后制作 Android/iOS 正式图标资源。锁已释放。
+
+- 2026-06-06 · Codex · **Echo Clay UI 全量功能迁移完成**：`Echo-Clay-UI/` 已迁入现有 UI 全部业务源码与 Web/Android/iOS 配置，新增独立 Clay 主题覆盖；功能源码比对 `88/88`，tsc、Web build、Android check、Android debug APK build 全部通过。剩余为连接真实后端做人工全链路验收。锁已释放。
+
+- 2026-06-06 · Codex · **Echo Claymorphism 独立前端完成**：新建 `Echo-Clay-UI/`，实现对话、探索、记忆、我的四个响应式页面与黏土式交互视觉；`npm.cmd run build` 通过，预览运行于 `http://127.0.0.1:4174`。剩余为接入现有业务数据与 API。锁已释放。
 
 - 2026-06-05 · Claude · **全量改名 Amber→Echo / 琥珀→回声(含文件夹)**:文件夹 `Amber/`→`Echo/`、`amber-engine`→`echo-engine`、`琥珀Amber数字生命UI`→`回声Echo数字生命UI`、`启动Amber.*`→`启动Echo.*`;前后端硬改全部内部标识(IndexedDB/localStorage 键、`AmberUser/AmberDB`、`bubble-amber-rim`、role 字面量、`echo_memory.db`、`com.echo.frag*`、订单前缀 ECHO);docs/README/CLAUDE 品牌改;保留真实文件名 `amber_deploy_ed25519`/`amber_admin_static_token.txt`。tsc+android:build 从新目录全绿。本地数据按约定重置。服务器 DB/目录改名留待下次部署(重置+重配 key)。锁已释放。
 

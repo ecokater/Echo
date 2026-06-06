@@ -1,0 +1,193 @@
+/*
+ * Echo Clay theme
+ * This file intentionally sits after the existing design system. It changes
+ * presentation only; all existing business components and behavior remain.
+ */
+
+:root {
+  --radius: 1.25rem;
+  --background: oklch(0.95 0.025 292);
+  --foreground: oklch(0.33 0.035 292);
+  --card: oklch(0.97 0.018 292);
+  --card-foreground: oklch(0.33 0.035 292);
+  --popover: oklch(0.97 0.018 292);
+  --popover-foreground: oklch(0.33 0.035 292);
+  --primary: oklch(0.65 0.13 292);
+  --primary-foreground: oklch(0.99 0.005 292);
+  --secondary: oklch(0.91 0.03 292);
+  --secondary-foreground: oklch(0.38 0.04 292);
+  --muted: oklch(0.91 0.025 292);
+  --muted-foreground: oklch(0.57 0.035 292);
+  --accent: oklch(0.68 0.13 292);
+  --accent-foreground: oklch(0.99 0.005 292);
+  --border: oklch(0.87 0.03 292);
+  --input: oklch(0.9 0.028 292);
+  --ring: oklch(0.68 0.13 292);
+  --fragment: oklch(0.81 0.12 82);
+  --fragment-glow: oklch(0.87 0.1 82);
+  --fragment-foreground: oklch(0.38 0.07 72);
+  --clay-dark: color-mix(in srgb, #695b9c 22%, transparent);
+  --clay-light: color-mix(in srgb, white 94%, transparent);
+  --clay-drop:
+    10px 12px 24px var(--clay-dark),
+    -8px -8px 20px var(--clay-light),
+    inset 3px 3px 5px color-mix(in srgb, white 72%, transparent),
+    inset -4px -5px 8px color-mix(in srgb, #6f5ea4 13%, transparent);
+  --clay-small:
+    5px 7px 14px color-mix(in srgb, #695b9c 17%, transparent),
+    -5px -5px 12px color-mix(in srgb, white 88%, transparent),
+    inset 2px 2px 3px color-mix(in srgb, white 70%, transparent),
+    inset -3px -3px 5px color-mix(in srgb, #6f5ea4 12%, transparent);
+  --clay-pressed:
+    inset 4px 5px 9px color-mix(in srgb, #695b9c 20%, transparent),
+    inset -3px -3px 7px color-mix(in srgb, white 78%, transparent);
+}
+
+.dark {
+  --background: oklch(0.24 0.035 292);
+  --foreground: oklch(0.92 0.02 292);
+  --card: oklch(0.28 0.038 292);
+  --card-foreground: oklch(0.92 0.02 292);
+  --popover: oklch(0.28 0.038 292);
+  --popover-foreground: oklch(0.92 0.02 292);
+  --primary: oklch(0.73 0.13 292);
+  --primary-foreground: oklch(0.23 0.035 292);
+  --secondary: oklch(0.32 0.04 292);
+  --secondary-foreground: oklch(0.9 0.02 292);
+  --muted: oklch(0.31 0.035 292);
+  --muted-foreground: oklch(0.7 0.035 292);
+  --accent: oklch(0.75 0.13 292);
+  --accent-foreground: oklch(0.23 0.035 292);
+  --border: oklch(0.37 0.04 292);
+  --input: oklch(0.32 0.04 292);
+  --ring: oklch(0.75 0.13 292);
+  --clay-dark: color-mix(in srgb, black 35%, transparent);
+  --clay-light: color-mix(in srgb, #887bab 24%, transparent);
+  --clay-drop:
+    10px 12px 24px var(--clay-dark),
+    -6px -6px 16px var(--clay-light),
+    inset 3px 3px 5px color-mix(in srgb, #a99dcc 18%, transparent),
+    inset -4px -5px 8px color-mix(in srgb, black 20%, transparent);
+  --clay-small:
+    5px 7px 14px color-mix(in srgb, black 28%, transparent),
+    -4px -4px 10px color-mix(in srgb, #887bab 20%, transparent),
+    inset 2px 2px 3px color-mix(in srgb, #b8acd8 15%, transparent),
+    inset -3px -3px 5px color-mix(in srgb, black 18%, transparent);
+  --clay-pressed:
+    inset 5px 6px 10px color-mix(in srgb, black 32%, transparent),
+    inset -3px -3px 7px color-mix(in srgb, #9c90bd 16%, transparent);
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 5%, color-mix(in srgb, #ffd6e5 32%, transparent), transparent 26rem),
+    radial-gradient(circle at 92% 95%, color-mix(in srgb, #beeadd 30%, transparent), transparent 28rem),
+    var(--background);
+  letter-spacing: 0;
+}
+
+.glass,
+.glass-strong {
+  border: 0 !important;
+  background: color-mix(in srgb, var(--card) 92%, transparent) !important;
+  backdrop-filter: none !important;
+  box-shadow: var(--clay-drop) !important;
+}
+
+.glass-strong {
+  background: color-mix(in srgb, var(--card) 97%, transparent) !important;
+}
+
+.bubble-echo-rim {
+  box-shadow:
+    var(--clay-small),
+    0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent) !important;
+}
+
+.fragment-glow {
+  background: linear-gradient(145deg, var(--fragment-glow), var(--fragment)) !important;
+  box-shadow:
+    6px 8px 15px color-mix(in srgb, #a88438 24%, transparent),
+    -5px -5px 12px color-mix(in srgb, white 75%, transparent),
+    inset 3px 3px 5px color-mix(in srgb, white 48%, transparent),
+    inset -4px -4px 7px color-mix(in srgb, #97752e 18%, transparent) !important;
+}
+
+button,
+[role="button"] {
+  transition:
+    transform 220ms cubic-bezier(.2, 1.5, .4, 1),
+    box-shadow 220ms ease,
+    background-color 220ms ease !important;
+}
+
+button:not(:disabled):hover,
+[role="button"]:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(.96) translateY(1px) !important;
+  box-shadow: var(--clay-pressed) !important;
+}
+
+input:not([type="range"]),
+textarea,
+select {
+  border: 0 !important;
+  background: color-mix(in srgb, var(--background) 82%, var(--card)) !important;
+  box-shadow: var(--clay-pressed) !important;
+}
+
+input[type="range"] {
+  height: .55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--background) 84%, var(--muted));
+  box-shadow: var(--clay-pressed);
+}
+
+.rounded-lg { border-radius: 1rem; }
+.rounded-xl { border-radius: 1.15rem; }
+.rounded-2xl { border-radius: 1.45rem; }
+.rounded-3xl { border-radius: 1.8rem; }
+
+.bg-gradient-to-br {
+  background-image: linear-gradient(145deg, var(--fragment-glow), var(--accent)) !important;
+  box-shadow: var(--clay-small);
+}
+
+.bg-primary {
+  box-shadow:
+    5px 7px 14px color-mix(in srgb, var(--primary) 32%, transparent),
+    -4px -4px 10px color-mix(in srgb, white 68%, transparent),
+    inset 3px 3px 5px color-mix(in srgb, white 30%, transparent),
+    inset -4px -4px 7px color-mix(in srgb, black 13%, transparent);
+}
+
+.bg-accent\/15,
+.bg-accent\/10,
+.bg-muted\/60,
+.bg-muted {
+  box-shadow: var(--clay-small);
+}
+
+@media (max-width: 767px) {
+  .glass,
+  .glass-strong {
+    box-shadow:
+      6px 7px 16px var(--clay-dark),
+      -4px -4px 12px var(--clay-light),
+      inset 2px 2px 4px color-mix(in srgb, white 45%, transparent),
+      inset -3px -3px 6px color-mix(in srgb, #6f5ea4 10%, transparent) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: .01ms !important;
+    transition-duration: .01ms !important;
+  }
+}

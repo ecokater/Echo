@@ -10,12 +10,16 @@ const isDev = !app.isPackaged;
 let win;
 
 function createWindow() {
+  const iconPath = isDev
+    ? path.join(__dirname, "public", "app-icon.png")
+    : path.join(__dirname, "dist", "app-icon.png");
   win = new BrowserWindow({
     width: 1280,
     height: 832,
     minWidth: 960,
     minHeight: 640,
     backgroundColor: "#0b0907",
+    icon: iconPath,
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true,
