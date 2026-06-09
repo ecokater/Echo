@@ -10,9 +10,11 @@
 
 | 执行者 | 任务 | 锁定文件/模块 | 开始时间 |
 |--------|------|--------------|---------|
+| Codex | 提交并上传新 Clay UI README | `README.md`, `Readme/image/echo_clay_*.png`, `work.md`, `working.md`, Git repository | 2026-06-09 |
 
 ## 🟢 最近完成 (RECENTLY DONE)
 
+- 2026-06-09 · Codex · **根 README 已使用新 Clay UI 重新设计**：新增真实运行截图 `echo_clay_desktop/mobile_chat/mobile_memory/mobile_me.png`，首页重构为品牌头部、状态徽章、产品预览、功能矩阵、隐私架构、技术栈、快速开始、平台状态与路线图；旧 UI 图片不再在根 README 展示。相对链接与图片尺寸已检查。锁已释放。
 - 2026-06-06 · Codex · **当前工程已提交 GitHub，iOS Mac 接手指南已生成**：完整工程已推送到 `ecokater/Echo` 的 `refactor/architecture` 分支，主提交 `f2ab19d`；新增 `回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md`，覆盖 Mac 环境、Xcode/CocoaPods、首次构建、插件/业务验收、IAP、隐私清单和 TestFlight 流程。锁已释放。
 - 2026-06-06 · Codex · **Digital Life 正式软件图标已应用**：已清理选中图标边缘并生成正式母版，同步替换 Clay UI、现有 Vite UI 的 Android/iOS/Web/Electron 图标与 `Echo/main_ui` 桌面图标，并移除桌面 Web 元数据中的旧 SVG 图标入口；三个前端 build 与两个 Android debug APK build 均通过。剩余为模拟器/真机启动器视觉确认。锁已释放。
 - 2026-06-06 · Codex · **Echo Clay App 图标五方向选型稿完成**：生成回声涟漪、陪伴气泡、数字生命、记忆萌芽、Echo 徽记五个候选与选型总览，保存于 `Echo-Clay-UI/design/app-icons/`。待用户选择后制作 Android/iOS 正式图标资源。锁已释放。

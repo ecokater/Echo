@@ -309,3 +309,11 @@ npm.cmd run android:build
 - 安全检查：未提交真实 API key、管理员令牌、私钥、证书、Provisioning Profile、APK、Pods 或构建目录；Clay UI 的 `.env.production` 仅包含占位域名。
 - 还差什么：iOS 尚未在 macOS/Xcode 上完成首次编译、模拟器启动和真机 OCR 验收。
 - 下一步 process：Mac 端 Codex checkout `refactor/architecture`，先阅读 `回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md`，执行 `npm install -> npm run build -> npx cap sync ios -> pod install -> xcodebuild`。
+
+### 2026-06-09 · Codex · 根 README 新 Clay UI 美化
+
+- 已完成：基于当前 `Echo-Clay-UI` 实际运行结果生成桌面聊天、手机聊天、手机记忆库和手机“我的”四张新截图，保存至 `Readme/image/echo_clay_*.png`。
+- 已完成：重写根 `README.md`，新增品牌头部、项目徽章、主视觉、产品价值、功能矩阵、隐私 Mermaid 架构、技术栈、快速开始、平台构建状态、路线图、文档和合规说明。
+- 已完成：根 README 不再引用旧 UI 截图；检查全部本地相对链接存在，图片尺寸与 `git diff --check` 通过。
+- 还差什么：尚未提交或推送 GitHub；GitHub 在线渲染效果可在提交后进一步微调。
+- 下一步 process：单独提交 `README.md`、`Readme/image/echo_clay_*.png`、`work.md` 与 `working.md`，推送后检查 GitHub 首页的 Mermaid、移动截图表格和徽章加载效果。

@@ -1,111 +1,134 @@
-# Echo 回声
+<div align="center">
+  <img src="Echo-Clay-UI/design/app-icons/selected/echo-digital-life-master.png" width="132" alt="Echo 回声 Logo" />
 
-Echo 是一个本地优先的数字生命与长期陪伴实验项目。它把人格、聊天记录、私有记忆和导入语料保存在用户设备本地，只把临时上下文发送给云端推理代理；服务端主要负责账号、钱包、计费、审计、管理后台和模型调用。
+  <h1>Echo 回声</h1>
 
-当前主线已经从早期 Echo/回声 原型更名为 Echo/回声。为了兼容已有本地数据，部分内部存储键、IndexedDB 名称和 CSS 类仍保留 `amber_*` / `amber-local` / `bubble-amber-rim`，这些是工程兼容层，不代表当前产品名。
+  <p><strong>让记忆留在你的设备，让陪伴拥有时间。</strong></p>
+  <p>一个本地优先、长期记忆驱动的数字生命与 AI 陪伴项目。</p>
 
-## 当前状态
+  <p>
+    <a href="#快速开始">快速开始</a> ·
+    <a href="#新一代-clay-ui">界面预览</a> ·
+    <a href="#隐私架构">隐私架构</a> ·
+    <a href="Readme/ReadmeEnglish.md">English</a> ·
+    <a href="Readme/ReadmeJapanese.md">日本語</a>
+  </p>
 
-- 阶段：beta / active development
-- 主前端：`回声Echo数字生命UI/`，Vite + React + Capacitor + Electron
-- 后端：`Echo/echo-engine/`，FastAPI + SQLAlchemy
-- Android appId：`com.echo.app`
-- 测试服务器：`http://129.204.151.118`
-- 主分支工作线：`refactor/architecture`
+  <p>
+    <img src="https://img.shields.io/badge/status-beta-F4C95D?style=flat-square" alt="Beta" />
+    <img src="https://img.shields.io/badge/local--first-privacy-8B7FD8?style=flat-square" alt="Local first" />
+    <img src="https://img.shields.io/badge/React-18-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 18" />
+    <img src="https://img.shields.io/badge/FastAPI-backend-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI" />
+    <img src="https://img.shields.io/badge/Capacitor-Android%20%7C%20iOS-119EFF?style=flat-square&logo=capacitor&logoColor=white" alt="Capacitor" />
+  </p>
+</div>
 
-## 核心原则
-
-- 本地优先：聊天全文、人格、长期记忆和导入语料默认只保存在本地 IndexedDB。
-- 云端最小化：服务端不持久化聊天全文和私有记忆，只保存账号、钱包、订单、推理消耗、错误元数据、分享卡和兑换码状态。
-- 多端复用：同一套 React 前端同时服务 Web/Electron/Android。
-- 主版本不包含 QQ bot：QQ bot 相关能力不进入当前主线。
-- 上架合规优先：敏感词过滤、隐私说明、账号删除、支付合规和数据最小化是核心约束。
-
-## 功能概览
-
-| 模块 | 状态 |
-|------|------|
-| 注册/登录/账号删除 | 已实现 |
-| 本地人格与聊天 | 已实现，IndexedDB 本地保存 |
-| 云端推理代理 | 已实现，`/api/inference/chat|distill|memory-summary` |
-| 平台模型配置 | 已实现，默认 SiliconFlow + `deepseek-ai/DeepSeek-V4-Pro`，后台可实时改模型/key/单价 |
-| 记忆管理 | 已实现，查看、搜索、置顶、删除、手动添加 |
-| 自动记忆整理与情绪退火 | 已实现，本地 Janitor + 需要总结时临时调用推理 |
-| 探索广场 | 已实现，云端仅分享人格卡，不上传私有聊天/记忆 |
-| 聊天记录导入 | 已实现，支持微信/QQ `.txt` 导入、粘贴导入 |
-| 图片 OCR 导入 | 已实现 Android 侧 ML Kit 中文离线识别，相册选图后进入本地导入管线 |
-| 兑换码 | 已实现，后台生成 100-1000 碎片兑换码，用户在“我的”中激活 |
-| 钱包/订单/消耗历史 | 已实现，碎片余额、订单、usage events |
-| 管理后台 | 已实现，`/api/admin/dashboard`，含用量、订单、分享审核、平台定价、兑换码工具 |
-| 多语言 | 已实现中文/英文切换，主要页面与面板已覆盖 |
-| 敏感词过滤 | 已实现，前端拦截 + 后端扣费前二次校验 |
-| Android debug APK | 已实现，可构建并安装到模拟器 |
-| 微信/支付宝支付 | 未实现，等待商户资质、回调域名和合规材料 |
-
-## 实机截图
-
-以下截图来自当前 Android Echo debug 版本，包名 `com.echo.app`。
+<br />
 
 <p align="center">
-  <img src="Readme/image/echo_chat.png" alt="Echo 对话界面" width="250" />
-  <img src="Readme/image/echo_explore.png" alt="Echo 探索广场" width="250" />
-  <img src="Readme/image/echo_memory.png" alt="Echo 记忆管理" width="250" />
+  <img src="Readme/image/echo_clay_desktop.png" alt="Echo Clay UI 桌面端对话界面" width="100%" />
 </p>
 
-<p align="center">
-  <img src="Readme/image/echo_me.png" alt="Echo 我的页面" width="250" />
-  <img src="Readme/image/echo_import.png" alt="Echo 导入聊天记录" width="250" />
-</p>
+> [!NOTE]
+> Echo 仍处于积极开发阶段。聊天、人格和长期记忆默认保存在用户设备本地；服务端负责账号、推理代理、计费、审计与公开人格卡，不持久化完整私有聊天记录。
 
-## 架构
+## 为什么是 Echo
 
-```text
-React UI (Vite)
-  ├─ Web / Electron
-  └─ Capacitor Android
-        │
-        │ HTTPS / HTTP debug
-        ▼
-FastAPI Echo Engine
-  ├─ auth / wallet / billing
-  ├─ inference proxy
-  ├─ usage + system audit
-  ├─ admin dashboard
-  ├─ explore shared persona cards
-  └─ redeem codes
+多数 AI 聊天产品把记忆交给云端。Echo 选择了另一条路：
 
-Local device
-  └─ IndexedDB: personas / messages / corpus / imported chat memory
+- **记忆属于用户**：人格、聊天记录、长期记忆和导入语料默认保存在本地 IndexedDB。
+- **上下文按需发送**：每次推理仅发送当前请求所需的最近对话与召回记忆。
+- **陪伴持续生长**：情绪状态、关系参数、记忆结晶与人格设定共同塑造长期体验。
+- **一套体验，多端运行**：React 前端可运行于 Web、Electron、Android 与 iOS。
+- **可观察、可管理**：钱包、消耗、退款、订单、探索分享与后台管理均有明确边界。
+
+## 新一代 Clay UI
+
+新 UI 位于 [`Echo-Clay-UI/`](Echo-Clay-UI/)，在保留现有完整业务能力的基础上，以柔和光影、黏土触感与物理按压反馈重新设计交互。首次启动默认浅色主题，也支持持久化深色主题。
+
+<table>
+  <tr>
+    <td align="center"><img src="Readme/image/echo_clay_mobile_chat.png" alt="Echo 手机端对话" width="260" /></td>
+    <td align="center"><img src="Readme/image/echo_clay_mobile_memory.png" alt="Echo 手机端记忆库" width="260" /></td>
+    <td align="center"><img src="Readme/image/echo_clay_mobile_me.png" alt="Echo 手机端服务中心" width="260" /></td>
+  </tr>
+  <tr>
+    <td align="center"><strong>自然对话</strong><br /><sub>关系感知、情绪反馈与本地历史</sub></td>
+    <td align="center"><strong>本地记忆</strong><br /><sub>搜索、钢印、整理与删除</sub></td>
+    <td align="center"><strong>账户与服务</strong><br /><sub>碎片、兑换码、用量与订单</sub></td>
+  </tr>
+</table>
+
+## 核心能力
+
+| 能力 | 当前实现 |
+| --- | --- |
+| 数字生命 | 创建分身、头像、预设人格、关系描述、核心记忆与参数微调 |
+| 长期对话 | 本地聊天历史、记忆召回、动态人格提示词与情绪状态更新 |
+| 记忆系统 | 本地搜索、添加、钢印、删除、自动结晶与手动整理 |
+| 聊天导入 | 微信/QQ 文本导入；Android 支持设备端离线中文 OCR |
+| 探索广场 | 发布与安装公开人格卡，不上传私有聊天和记忆库 |
+| 账户系统 | 注册、登录、删除账号、钱包、订单、用量、退款与兑换码 |
+| 平台治理 | 管理后台、模型与定价配置、审计记录、敏感词双重过滤 |
+| 多端体验 | Web、Electron、Android、iOS/Capacitor；中文与 English |
+
+## 隐私架构
+
+```mermaid
+flowchart LR
+    subgraph Device["用户设备"]
+      UI["Echo UI"]
+      DB[("IndexedDB")]
+      UI <--> DB
+      DB --- P["人格 / 聊天 / 长期记忆 / 导入语料"]
+    end
+
+    subgraph Cloud["Echo Engine"]
+      AUTH["账号与鉴权"]
+      PROXY["无状态推理代理"]
+      BILL["钱包 / 计费 / 审计"]
+      SHARE["公开人格卡"]
+    end
+
+    UI -->|"临时上下文"| PROXY
+    PROXY -->|"模型回复"| UI
+    UI <--> AUTH
+    UI <--> BILL
+    UI <--> SHARE
 ```
 
-服务端不会主动读取或保存完整聊天历史。前端在发送消息时从本地取最近对话和检索到的记忆，组装临时上下文，请求 `/api/inference/chat`，再把回复写回本地。
+| 默认保存在本地 | 服务端保存 | 默认不上传 |
+| --- | --- | --- |
+| 人格、聊天、长期记忆、导入语料、OCR 结果 | 账号、钱包、订单、消耗元数据、公开人格卡、兑换码状态 | 完整聊天全文、私有记忆库、原始聊天导出文件 |
 
-## 目录结构
+## 技术栈
 
-```text
-Echo/echo-engine/              FastAPI 后端
-  main.py                        应用入口
-  database.py                    SQLAlchemy 模型
-  routers/                       API 路由
-  services/                      推理、钱包、敏感词等服务
-  repositories/                  数据访问层
-
-回声Echo数字生命UI/              当前主前端
-  src/pages/                     页面
-  src/components/                业务组件与 UI 组件
-  src/api/                       前端 API client
-  src/lib/                       本地 DB、RAG、导入、OCR、i18n 等
-  android/                       Capacitor Android 工程
-
-deploy/                          Docker Compose / Caddy 部署
-docs/                            部署、移动端构建等文档
-work.md / working.md             Codex 与 Claude 协作日志
-用户需求.md                       需求状态清单
-```
+| 层级 | 技术 |
+| --- | --- |
+| Clay 前端 | Vite、React、TypeScript、Tailwind CSS、Framer Motion、Zustand |
+| 本地数据 | IndexedDB、`idb`、本地 RAG 与 Janitor |
+| 移动端 | Capacitor 6、Android、iOS、ML Kit OCR |
+| 桌面端 | Electron |
+| 服务端 | Python、FastAPI、SQLAlchemy、PostgreSQL / SQLite |
+| 部署 | Docker Compose、Caddy |
 
 ## 快速开始
 
-### 1. 后端
+### 运行新 Clay UI
+
+```powershell
+git clone https://github.com/ecokater/Echo.git
+cd Echo
+git checkout refactor/architecture
+
+cd Echo-Clay-UI
+npm install
+npm.cmd run dev
+```
+
+打开 `http://127.0.0.1:4174`。
+
+### 启动后端
 
 ```powershell
 cd Echo/echo-engine
@@ -115,168 +138,95 @@ pip install -r requirements.txt
 python main.py
 ```
 
-默认监听：
+后端默认监听 `http://127.0.0.1:8000`。生产环境变量与部署说明见 [Backend Guide](Readme/BACKEND_GUIDE.md)。
 
-```text
-http://127.0.0.1:8000
-```
-
-可选环境变量：
-
-```env
-SECRET_KEY=change-me
-DATABASE_URL=sqlite:///data/amber_memory.db
-ADMIN_STATIC_TOKEN=change-me-admin-token
-PLATFORM_API_KEY=sk-...
-PLATFORM_BASE_URL=https://api.siliconflow.cn/v1
-PLATFORM_MODEL_ID=deepseek-ai/DeepSeek-V4-Pro
-```
-
-### 2. 前端
+### 常用验证
 
 ```powershell
-cd 回声Echo数字生命UI
-npm install
-npm.cmd run dev
-```
-
-Windows PowerShell 如果遇到 `npm.ps1` 执行策略限制，可以使用：
-
-```powershell
-npm.cmd run dev
-```
-
-### 3. 一键启动开发环境
-
-```powershell
-python launch.py
-```
-
-## Android 构建
-
-需要 Android Studio、JDK 17、Android SDK。
-
-检查环境：
-
-```powershell
-cd 回声Echo数字生命UI
-npm.cmd run android:check
-```
-
-构建 debug APK：
-
-```powershell
-npm.cmd run android:build
-```
-
-输出路径：
-
-```text
-回声Echo数字生命UI/android/app/build/outputs/apk/debug/app-debug.apk
-```
-
-debug 默认连接电脑宿主机：
-
-```env
-VITE_API_BASE_URL=http://10.0.2.2:8000
-VITE_WS_BASE_URL=ws://10.0.2.2:8000
-```
-
-如果要构建连接测试服务器的 APK：
-
-```powershell
-$env:VITE_API_BASE_URL="http://129.204.151.118"
-$env:VITE_WS_BASE_URL="ws://129.204.151.118"
-npm.cmd run android:build
-```
-
-安装到模拟器：
-
-```powershell
-$adb="$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
-& $adb install -r "回声Echo数字生命UI\android\app\build\outputs\apk\debug\app-debug.apk"
-& $adb shell monkey -p com.echo.app -c android.intent.category.LAUNCHER 1
-```
-
-release / 上架版本必须使用真实 HTTPS API 域名。
-
-## Docker 部署
-
-服务器部署配置位于 `deploy/`。基本流程：
-
-```bash
-cd deploy
-cp .env.example .env
-# 编辑 .env：SECRET_KEY / DATABASE_URL / PLATFORM_API_KEY / ADMIN_STATIC_TOKEN 等
-docker compose up -d --build
-```
-
-管理后台：
-
-```text
-http://<server>/api/admin/dashboard
-```
-
-把管理员账号 JWT 或 `ADMIN_STATIC_TOKEN` 粘贴到后台顶部 token 输入框即可进入。固定管理员令牌等同后台长期密钥，不要提交到仓库、截图或公开日志。
-
-## 常用验证
-
-后端：
-
-```powershell
-python -m compileall Echo\echo-engine
-python -c "import sys; sys.path.insert(0, r'Echo\\echo-engine'); import main; print('main import ok')"
-```
-
-前端：
-
-```powershell
-cd 回声Echo数字生命UI
+# Clay UI
+cd Echo-Clay-UI
 npx.cmd tsc --noEmit -p tsconfig.app.json
 npm.cmd run build
-```
-
-Android：
-
-```powershell
-cd 回声Echo数字生命UI
+npm.cmd run android:check
 npm.cmd run android:build
+
+# Backend
+cd ../Echo/echo-engine
+python -m compileall .
 ```
 
-## 隐私与数据
+## 平台构建
 
-- 本地数据：人格、聊天、长期记忆、导入语料、OCR 识别结果。
-- 云端数据：账号、钱包、订单、推理消耗、错误元数据、公开分享的人格卡、兑换码状态。
-- 不上传：完整聊天全文、私有记忆库、微信/QQ 原始导出全文。
-- OCR 导入：当前 Android 侧使用 ML Kit 捆绑中文识别器，识别在设备本地完成。
-- 探索分享：只发布用户主动选择分享的人格卡字段，不包含私有聊天记录。
+| 平台 | 状态 | 入口 |
+| --- | --- | --- |
+| Web | 可构建 | `Echo-Clay-UI/` 或 `回声Echo数字生命UI/` |
+| Android | Debug APK 已验证 | `npm.cmd run android:build` |
+| iOS | 工程已生成，待 Mac 首次编译验收 | [iOS Mac Handoff](回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md) |
+| Electron | 已接入 | `electron-main.cjs` |
+| 服务端 | 可本地运行 / Docker 部署 | `Echo/echo-engine/`、`deploy/` |
 
-## 合规提示
+Android Debug APK 输出：
 
-- 导入聊天记录、创建他人分身或使用肖像/声音/文本资料前，应取得相关权利人的明确授权。
-- 不得用于诈骗、冒充他人、诱导、骚扰、侵犯名誉、侵犯隐私或传播违法内容。
-- 当前敏感词过滤只是基础防线，正式上线建议接入维护版词库或内容安全服务。
-- iOS 虚拟商品通常需要走 App Store IAP；国内分发还需关注 App 备案、算法备案、生成式 AI 相关要求。
-- 本项目仍处于 beta 阶段，生产/商业使用前应补齐隐私政策、用户协议、数据删除流程、安全审计和支付合规。
+```text
+Echo-Clay-UI/android/app/build/outputs/apk/debug/app-debug.apk
+```
 
-## 重要说明
+> [!IMPORTANT]
+> Release 与 App Store / 应用商店版本必须使用真实 HTTPS/WSS API。iOS 虚拟商品必须使用 Apple IAP，包内不能以微信或支付宝绕过 App Store 支付。
 
-- 不要把项目放在包含中文字符的安装路径下运行打包版 Electron/PyInstaller，Windows 打包或运行时可能出问题。
-- 本仓库目前仍保留部分 `Echo` 目录名，这是历史工程目录名，不影响当前产品名 Echo。
-- 旧 `Echo/main_ui` Next.js 前端基本退役，当前开发请使用 `回声Echo数字生命UI/`。
+## 项目结构
 
-## 贡献者
+```text
+Echo-Clay-UI/                   新一代完整功能 Clay UI
+回声Echo数字生命UI/             现有 Vite + React + Capacitor/Electron UI
+Echo/echo-engine/              FastAPI 后端
+Echo/main_ui/                  早期 Next.js + Electron 桌面 UI
+deploy/                        Docker Compose / Caddy 部署
+docs/                          架构、移动端与重构规划
+Readme/                        多语言与开发指南
+用户需求.md                     产品需求与验收标准
+work.md / working.md           Codex 与 Claude 协作日志
+```
 
-当前维护者与贡献者：
+## 路线图
 
-- ecokater
+- [x] 本地优先人格、聊天与长期记忆
+- [x] 无状态推理代理、钱包、用量与退款审计
+- [x] 探索人格卡、兑换码、管理后台与双重敏感词过滤
+- [x] Android Debug 构建与设备端离线 OCR
+- [x] 完整功能 Claymorphism 新 UI
+- [ ] 新 UI 真实账号全链路验收
+- [ ] iOS 模拟器、真机与 TestFlight 验收
+- [ ] Apple IAP、微信/支付宝正式支付渠道
+- [ ] HTTPS 域名、发布签名与商店合规材料
 
-## 灵感来源
+## 文档
 
-- [notdog1998/yourself-skill](https://github.com/notdog1998/yourself-skill)：早期灵感来源。
-- [LC044/WeChatMsg](https://github.com/LC044/WeChatMsg)：聊天记录导出与文档启发。
+- [快速开始](Readme/QUICK_START.md)
+- [前端指南](Readme/FRONTEND_GUIDE.md)
+- [后端指南](Readme/BACKEND_GUIDE.md)
+- [移动端构建](docs/MOBILE_BUILD.md)
+- [多平台规划](docs/MULTIPLATFORM_PLAN.md)
+- [iOS Mac 接手指南](回声Echo数字生命UI/ios/IOS_MAC_HANDOFF.md)
 
-## 反馈
+## 合规与责任
 
-- Email: [t2510458625@gmail.com](mailto:t2510458625@gmail.com)
-- Issues: 请在 GitHub 仓库提交问题和建议。
+- 导入聊天记录、创建他人分身或使用肖像、声音、文本资料前，应取得相关权利人的明确授权。
+- 不得将 Echo 用于诈骗、冒充、骚扰、侵犯隐私、侵犯名誉或传播违法内容。
+- 当前敏感词系统属于基础防线；正式商业上线前仍需完善内容安全、隐私政策、用户协议、数据删除与安全审计。
+- 国内公开运营还需结合实际业务评估 App 备案、算法备案、生成式 AI 与支付相关要求。
+
+## 参与项目
+
+Echo 由 [ecokater](https://github.com/ecokater) 发起并维护。欢迎通过 [Issues](https://github.com/ecokater/Echo/issues) 提交建议、问题与设计反馈。
+
+早期灵感与参考：
+
+- [notdog1998/yourself-skill](https://github.com/notdog1998/yourself-skill)
+- [LC044/WeChatMsg](https://github.com/LC044/WeChatMsg)
+
+<div align="center">
+  <br />
+  <img src="Echo-Clay-UI/public/app-icon.png" width="72" alt="Echo" />
+  <p><sub>Echo 回声 · Your memories stay with you.</sub></p>
+</div>
