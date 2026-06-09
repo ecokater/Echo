@@ -86,6 +86,15 @@ server test: `http://129.204.151.118`
 
 ## 近期关键记录
 
+### 2026-06-10 · Claude · 项目介绍网站(黏土风落地页)
+
+- 新增 `site/index.html` —— 自包含单文件落地页(内联 CSS + 极少 JS),无需构建,可直接浏览器打开或部署任意静态托管。
+- 设计契合 Clay UI:浅紫黏土配色、白色软卡 + 双向柔影(`--clay`)、圆润字体(Baloo 2 / Nunito,中文回退系统圆体)、漂浮色块、scroll-reveal、卡片悬浮、中/EN 一键切换(`data-zh`/`data-en`)。
+- 区块:导航 / Hero(悬浮 app 图标 + 渐变标题 + 双 CTA + 信任 chip)/ 功能 6 卡 / 界面展示(桌面置于浏览器框 + 三台手机框引用真实 Clay 截图)/ 原理三步 + 隐私卡 / 技术栈 pills / CTA band / 页脚(含 beta 合规声明)。
+- 素材:`site/assets/` 拷入 `app-icon.png` + `desktop/mobile_chat/mobile_memory/mobile_me.png`(来自 `Readme/image` 的 Clay 截图),网站自包含。
+- 验证:Edge 无头渲染 hero 截图确认黏土质感/字体/图标/CTA 正常。
+- 还差什么:GitHub Pages 托管需选源(`/site` 非 Pages 内置源;可走 Actions 发布 `site/`、或拷到 `/docs`、或 Netlify/Vercel 指向 `site/`)。未提交。模拟器仍被 Vanguard 卡死,Clay 真机新截图待环境恢复。
+
 ### 2026-06-05 · Claude · 全量改名 Amber→Echo / 琥珀→回声(含文件夹,硬改接受数据重置)
 
 - 文件夹:`Amber/`→`Echo/`、`amber-engine`→`echo-engine`、`琥珀Amber数字生命UI`→`回声Echo数字生命UI`、`启动Amber.*`→`启动Echo.*`(git 识别 333 renames)。

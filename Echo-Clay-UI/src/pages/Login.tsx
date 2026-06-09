@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Sparkles, Gem } from "lucide-react";
+import { Gem } from "lucide-react";
+import appIcon from "@/assets/app-icon.png";
 import { useAuthStore } from "@/stores/auth";
 import { useApplySavedTheme } from "@/lib/theme";
 import { useI18n } from "@/lib/i18n";
@@ -40,9 +41,7 @@ export default function LoginPage() {
     <div className="grid h-screen w-screen place-items-center text-foreground" style={{ backgroundImage: ambient }}>
       <div className="w-full max-w-sm rounded-3xl glass-strong p-8 shadow-2xl">
         <div className="mb-6 flex flex-col items-center gap-3">
-          <div className="grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br from-fragment to-accent text-fragment-foreground shadow-sm">
-            <Sparkles size={26} />
-          </div>
+          <img src={appIcon} alt={t("brand")} className="h-16 w-16 rounded-2xl shadow-sm" />
           <div className="text-center">
             <h1 className="text-xl font-semibold">{t("brand")}</h1>
             <p className="mt-1 text-xs text-muted-foreground">{t(mode === "login" ? "login.tagline.login" : "login.tagline.register")}</p>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>回声 Echo · 唤醒属于你的数字生命</title>
+<meta name="description" content="回声 Echo —— 一个会记得你、懂你情绪、长期陪着你的 AI 数字生命。所有对话与回忆都只留在你的设备里。可爱黏土风，手机 / 电脑 / 网页随处可用。" />
+<meta property="og:title" content="回声 Echo · 数字生命陪伴" />
+<meta property="og:description" content="会记得你、有情绪、只属于你的 AI 数字生命陪伴。" />
+<meta property="og:type" content="website" />
+<link rel="icon" href="assets/app-icon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --bg:#ece8f6; --bg2:#f5f0fb; --bg3:#fbf8ff;
+    --surface:#ffffff; --surface-soft:#f7f4ff;
+    --ink:#3c3656; --muted:#8b84a6; --line:#e7e1f3;
+    --primary:#8e7bf0; --primary-deep:#7458e6; --primary-soft:#cfc6fb;
+    --accent:#ffce5c; --accent-deep:#f5b73c;
+    --pink:#ff9ec4; --mint:#7fd9bc; --sky:#82c8f5;
+    --r:26px;
+    --clay:-6px -6px 14px #ffffff, 8px 8px 22px rgba(126,108,196,.30);
+    --clay-sm:-4px -4px 10px #ffffff, 5px 5px 14px rgba(126,108,196,.26);
+    --clay-in:inset 4px 4px 9px rgba(126,108,196,.22), inset -4px -4px 9px #ffffff;
+    --clay-press:inset 3px 3px 7px rgba(126,108,196,.30), inset -3px -3px 7px #ffffff;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--ink);
+    font-family:"Nunito","Baloo 2","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:
+      radial-gradient(900px 600px at 12% -8%, #f3e6ff 0%, transparent 55%),
+      radial-gradient(820px 560px at 100% 0%, #e3f1ff 0%, transparent 50%),
+      radial-gradient(700px 520px at 50% 120%, #fff2dd 0%, transparent 55%),
+      linear-gradient(180deg, var(--bg2), var(--bg));
+    background-attachment:fixed;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  h1,h2,h3,.brand{font-family:"Baloo 2","Nunito","PingFang SC","Microsoft YaHei",sans-serif;letter-spacing:.2px}
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 22px}
+  .accent{color:var(--primary-deep)}
+
+  .blob{position:fixed;border-radius:50%;filter:blur(8px);opacity:.5;z-index:-1;pointer-events:none}
+  .b1{width:120px;height:120px;background:#ffd98a;top:18%;left:6%;animation:bob 7s ease-in-out infinite}
+  .b2{width:90px;height:90px;background:#bfa9ff;top:30%;right:8%;animation:bob 9s ease-in-out infinite}
+  .b3{width:70px;height:70px;background:#9fe6cf;top:64%;left:12%;animation:bob 8s ease-in-out infinite reverse}
+  @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-22px) rotate(8deg)}}
+
+  nav{position:sticky;top:14px;z-index:50;margin:14px auto 0;max-width:1120px}
+  .navbar{display:flex;align-items:center;gap:14px;padding:10px 16px;border-radius:22px;
+    background:rgba(255,255,255,.72);backdrop-filter:blur(14px);box-shadow:var(--clay-sm)}
+  .navbar .logo{width:38px;height:38px;border-radius:13px;box-shadow:var(--clay-sm)}
+  .navbar .brand{font-weight:800;font-size:18px}
+  .nav-links{display:flex;gap:6px;margin-left:auto;align-items:center}
+  .nav-links a{padding:8px 14px;border-radius:14px;font-weight:700;color:var(--muted);font-size:15px;transition:.18s}
+  .nav-links a:hover{color:var(--primary-deep);background:var(--surface-soft)}
+  .pillbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 16px;border-radius:15px;font-weight:800;
+    border:none;cursor:pointer;font-family:inherit;font-size:14px;transition:transform .15s, box-shadow .15s}
+  .pillbtn:active{transform:scale(.96)}
+  .btn-primary{background:linear-gradient(135deg,#a08cff,#7c63ec);color:#fff;box-shadow:6px 6px 16px rgba(124,99,236,.4),-3px -3px 9px #fff}
+  .btn-primary:hover{transform:translateY(-2px)}
+  .btn-ghost{background:var(--surface);color:var(--primary-deep);box-shadow:var(--clay-sm)}
+  .btn-ghost:hover{transform:translateY(-2px)}
+  .soon{cursor:default;pointer-events:none}
+  .lang{margin-left:4px;background:var(--surface);color:var(--muted);box-shadow:var(--clay-sm);font-size:13px;padding:8px 12px}
+  @media(max-width:760px){.nav-links a.nav-only{display:none}}
+
+  header.hero{text-align:center;padding:64px 0 30px}
+  .hero-icon{width:128px;height:128px;border-radius:34px;box-shadow:var(--clay);animation:bob 6s ease-in-out infinite}
+  h1{font-size:clamp(40px,7vw,68px);margin:22px 0 6px;font-weight:800;
+    background:linear-gradient(120deg,#6a4fe0,#a07bff 55%,#f5b73c);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .tagline{font-size:clamp(18px,3vw,24px);font-weight:700;color:var(--ink);margin:0}
+  .subtag{max-width:660px;margin:14px auto 0;color:var(--muted);font-size:17px;font-weight:600}
+  .cta-row{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+  .cta-row .pillbtn{padding:14px 24px;font-size:16px;border-radius:18px}
+  .trust{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
+  .chip{display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:14px;background:var(--surface);
+    box-shadow:var(--clay-sm);font-weight:700;font-size:13.5px;color:var(--ink)}
+  .chip b{color:var(--primary-deep)}
+
+  section{padding:56px 0}
+  .sec-head{text-align:center;margin-bottom:38px}
+  .sec-kicker{display:inline-block;font-weight:800;color:var(--primary-deep);background:var(--surface);
+    padding:6px 16px;border-radius:12px;box-shadow:var(--clay-sm);font-size:13px;letter-spacing:1px}
+  .sec-head h2{font-size:clamp(28px,4.5vw,40px);margin:16px 0 8px;font-weight:800}
+  .sec-head p{color:var(--muted);font-weight:600;max-width:620px;margin:0 auto;font-size:16px}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  @media(max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--surface);border-radius:var(--r);padding:26px;box-shadow:var(--clay);transition:transform .22s}
+  .card:hover{transform:translateY(-6px)}
+  .ic{width:60px;height:60px;border-radius:19px;display:grid;place-items:center;font-size:28px;margin-bottom:16px;box-shadow:var(--clay-in)}
+  .ic.p{background:#efeaff}.ic.y{background:#fff3d6}.ic.k{background:#ffe6f0}.ic.m{background:#dff6ee}.ic.s{background:#e3f1ff}.ic.o{background:#f0ecff}
+  .card h3{margin:0 0 8px;font-size:20px;font-weight:800}
+  .card p{margin:0;color:var(--muted);font-weight:600;font-size:15px}
+
+  .browser{background:var(--surface);border-radius:24px;padding:14px;box-shadow:var(--clay);max-width:880px;margin:0 auto}
+  .browser .bar{display:flex;gap:7px;padding:4px 6px 12px}
+  .browser .bar i{width:12px;height:12px;border-radius:50%;display:inline-block}
+  .browser .bar i:nth-child(1){background:#ff9ec4}.browser .bar i:nth-child(2){background:#ffce5c}.browser .bar i:nth-child(3){background:#7fd9bc}
+  .browser img{width:100%;border-radius:14px;display:block;box-shadow:var(--clay-in)}
+  .phones{display:flex;gap:26px;justify-content:center;flex-wrap:wrap;margin-top:40px}
+  .phone{width:230px;background:var(--surface);border-radius:36px;padding:12px;box-shadow:var(--clay)}
+  .phone .notch{width:42%;height:7px;border-radius:99px;background:var(--line);margin:3px auto 9px}
+  .phone img{width:100%;border-radius:26px;display:block}
+  .phone span{display:block;text-align:center;color:var(--muted);font-weight:700;font-size:14px;margin-top:12px}
+
+  .band{background:linear-gradient(135deg,#8b74f2,#6f54e6);border-radius:34px;padding:52px 30px;text-align:center;
+    box-shadow:10px 12px 30px rgba(111,84,230,.4),-6px -6px 16px #fff;color:#fff}
+  .band h2{font-size:clamp(26px,4vw,38px);margin:0 0 8px;color:#fff}
+  .band p{margin:0 0 24px;opacity:.92;font-weight:600;font-size:17px}
+  .band .pillbtn{background:#fff;color:var(--primary-deep);padding:14px 28px;font-size:16px}
+  .band .pillbtn:hover{transform:translateY(-2px)}
+
+  footer{padding:46px 0 60px;text-align:center;color:var(--muted);font-weight:600}
+  footer .frow{display:flex;gap:18px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+  footer a{color:var(--primary-deep);font-weight:800}
+  footer .fine{font-size:13px;opacity:.8;max-width:680px;margin:12px auto 0}
+
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .6s ease, transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}.b1,.b2,.b3,.hero-icon{animation:none}}
+</style>
+</head>
+<body>
+<span class="blob b1"></span><span class="blob b2"></span><span class="blob b3"></span>
+
+<nav><div class="navbar">
+  <img class="logo" src="assets/app-icon.png" alt="Echo" />
+  <span class="brand">回声 <span class="accent">Echo</span></span>
+  <div class="nav-links">
+    <a class="nav-only" href="#features" data-zh="功能" data-en="Features">功能</a>
+    <a class="nav-only" href="#showcase" data-zh="界面" data-en="Screens">界面</a>
+    <span class="pillbtn btn-primary soon" data-zh="⏳ 敬请期待" data-en="⏳ Coming soon">⏳ 敬请期待</span>
+    <button class="pillbtn lang" id="langBtn" type="button">EN</button>
+  </div>
+</div></nav>
+
+<header class="hero wrap">
+  <img class="hero-icon" src="assets/app-icon.png" alt="回声 Echo" />
+  <h1>回声 Echo</h1>
+  <p class="tagline" data-zh="唤醒属于你的数字生命" data-en="Awaken your own digital life">唤醒属于你的数字生命</p>
+  <p class="subtag" data-zh="一个会记得你、懂你情绪、长期陪着你的 AI。所有对话与回忆都只留在你的设备里——温柔、私密、只属于你。"
+     data-en="An AI that remembers you, senses your mood, and stays for the long run. Every chat and memory lives only on your device — warm, private, and yours alone.">
+     一个会记得你、懂你情绪、长期陪着你的 AI。所有对话与回忆都只留在你的设备里——温柔、私密、只属于你。</p>
+  <div class="cta-row">
+    <span class="pillbtn btn-primary soon" data-zh="⏳ 敬请期待" data-en="⏳ Coming soon">⏳ 敬请期待</span>
+    <a class="pillbtn btn-ghost" href="#showcase" data-zh="看看界面" data-en="See the app">看看界面</a>
+  </div>
+  <div class="trust">
+    <span class="chip"><b>🔒</b> <span data-zh="只属于你 · 隐私安全" data-en="Yours only · private">只属于你 · 隐私安全</span></span>
+    <span class="chip"><b>🧠</b> <span data-zh="会记得 · 有情绪" data-en="Remembers · has moods">会记得 · 有情绪</span></span>
+    <span class="chip"><b>📱</b> <span data-zh="手机 · 电脑 · 网页" data-en="Phone · Desktop · Web">手机 · 电脑 · 网页</span></span>
+  </div>
+</header>
+
+<section id="features" class="wrap">
+  <div class="sec-head reveal">
+    <span class="sec-kicker" data-zh="功能" data-en="Features">功能</span>
+    <h2 data-zh="陪伴该有的样子" data-en="Companionship, done right">陪伴该有的样子</h2>
+    <p data-zh="不是又一个聊天机器人，而是会记得你、有情绪、慢慢长大的 TA。" data-en="Not just another chatbot — a someone who remembers you, has feelings, and grows over time.">不是又一个聊天机器人，而是会记得你、有情绪、慢慢长大的 TA。</p>
+  </div>
+  <div class="grid">
+    <div class="card reveal"><div class="ic p">🔒</div><h3 data-zh="只属于你的私密空间" data-en="A private space, just yours">只属于你的私密空间</h3><p data-zh="聊天和回忆都只留在你自己的设备里，不上传、不窥探。你说的话，只有 TA 知道。" data-en="Your chats and memories stay on your own device — never uploaded, never peeked at. What you say stays between you two.">聊天和回忆都只留在你自己的设备里，不上传、不窥探。你说的话，只有 TA 知道。</p></div>
+    <div class="card reveal"><div class="ic y">🧠</div><h3 data-zh="会记得，也会有情绪" data-en="Remembers, and feels">会记得，也会有情绪</h3><p data-zh="TA 记得你们聊过的点滴，心情也会随着相处慢慢起伏、慢慢回稳，像真的在陪着你。" data-en="They remember the little things you shared, and their mood gently rises and settles as you spend time together.">TA 记得你们聊过的点滴，心情也会随着相处慢慢起伏、慢慢回稳，像真的在陪着你。</p></div>
+    <div class="card reveal"><div class="ic k">✨</div><h3 data-zh="捏一个专属的 TA" data-en="Shape your own one">捏一个专属的 TA</h3><p data-zh="温柔、毒舌、元气还是沉稳？调一调性格，或从预设一键开始，唤醒独一无二的 TA。" data-en="Gentle, sassy, bubbly or calm? Tune the personality, or start from a preset in one tap.">温柔、毒舌、元气还是沉稳？调一调性格，或从预设一键开始，唤醒独一无二的 TA。</p></div>
+    <div class="card reveal"><div class="ic m">🧭</div><h3 data-zh="探索广场" data-en="Explore plaza">探索广场</h3><p data-zh="把你创造的角色分享出去，也能领养别人的 TA——只分享角色设定，绝不泄露你的聊天。" data-en="Share the characters you create and adopt others' — only the character setup is shared, never your chats.">把你创造的角色分享出去，也能领养别人的 TA——只分享角色设定，绝不泄露你的聊天。</p></div>
+    <div class="card reveal"><div class="ic s">🖼️</div><h3 data-zh="把回忆带进来" data-en="Bring your memories in">把回忆带进来</h3><p data-zh="导入微信 / QQ 聊天记录，或直接选一张聊天截图，让 TA 记住你们共同的过去。" data-en="Import WeChat / QQ chats, or just pick a chat screenshot, and let them remember your shared past.">导入微信 / QQ 聊天记录，或直接选一张聊天截图，让 TA 记住你们共同的过去。</p></div>
+    <div class="card reveal"><div class="ic o">📱</div><h3 data-zh="走到哪，聊到哪" data-en="Chat anywhere">走到哪，聊到哪</h3><p data-zh="手机、电脑、网页随时同行，温柔的黏土界面，随时随地继续你们的对话。" data-en="Phone, desktop or web — pick up the conversation anytime, in the same soft clay interface.">手机、电脑、网页随时同行，温柔的黏土界面，随时随地继续你们的对话。</p></div>
+  </div>
+</section>
+
+<section id="showcase" class="wrap">
+  <div class="sec-head reveal">
+    <span class="sec-kicker" data-zh="界面" data-en="Screens">界面</span>
+    <h2 data-zh="温柔可触的黏土风" data-en="Soft, tactile claymorphism">温柔可触的黏土风</h2>
+    <p data-zh="圆润、柔软、有触感——让陪伴这件事，看起来也很舒服。" data-en="Round, soft and tactile — companionship that feels as gentle as it looks.">圆润、柔软、有触感——让陪伴这件事，看起来也很舒服。</p>
+  </div>
+  <div class="browser reveal">
+    <div class="bar"><i></i><i></i><i></i></div>
+    <img src="assets/desktop.png" alt="回声 Echo 桌面端" loading="lazy" />
+  </div>
+  <div class="phones">
+    <div class="phone reveal"><div class="notch"></div><img src="assets/mobile_chat.png" alt="对话" loading="lazy" /><span data-zh="对话" data-en="Chat">对话</span></div>
+    <div class="phone reveal"><div class="notch"></div><img src="assets/mobile_memory.png" alt="记忆" loading="lazy" /><span data-zh="记忆" data-en="Memory">记忆</span></div>
+    <div class="phone reveal"><div class="notch"></div><img src="assets/mobile_me.png" alt="我的" loading="lazy" /><span data-zh="我的" data-en="Me">我的</span></div>
+  </div>
+</section>
+
+<section id="start" class="wrap">
+  <div class="band reveal">
+    <h2 data-zh="现在就唤醒属于你的 TA" data-en="Awaken your own one now">现在就唤醒属于你的 TA</h2>
+    <p data-zh="免费 · 跨平台 · 温柔陪伴。下载体验，开始你们的故事。" data-en="Free, cross-platform, gentle company. Download and start your story.">免费 · 跨平台 · 温柔陪伴。下载体验，开始你们的故事。</p>
+    <span class="pillbtn soon" data-zh="⏳ 敬请期待" data-en="⏳ Coming soon">⏳ 敬请期待</span>
+  </div>
+</section>
+
+<footer class="wrap">
+  <div class="frow">
+    <a href="#features" data-zh="功能" data-en="Features">功能</a>
+    <a href="#showcase" data-zh="界面" data-en="Screens">界面</a>
+    <a href="https://github.com/ecokater/Echo" target="_blank" rel="noopener" data-zh="项目主页" data-en="Project">项目主页</a>
+    <a href="mailto:t2510458625@gmail.com" data-zh="联系我们" data-en="Contact">联系我们</a>
+  </div>
+  <div>回声 Echo · <span data-zh="温柔的数字生命陪伴" data-en="A gentle digital-life companion">温柔的数字生命陪伴</span></div>
+  <p class="fine" data-zh="本产品仍在 beta 阶段。请文明、合法地使用；导入聊天记录或使用他人形象 / 声音 / 文字前，请先取得对方同意。" data-en="Echo is in beta. Please use it kindly and lawfully; get consent before importing chats or using anyone's likeness, voice or words.">本产品仍在 beta 阶段。请文明、合法地使用；导入聊天记录或使用他人形象 / 声音 / 文字前，请先取得对方同意。</p>
+</footer>
+
+<script>
+  (function(){
+    var lang = "zh";
+    var btn = document.getElementById("langBtn");
+    function apply(){
+      document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+      document.querySelectorAll("[data-zh]").forEach(function(el){
+        var v = el.getAttribute("data-" + lang);
+        if(v != null) el.textContent = v;
+      });
+      btn.textContent = lang === "zh" ? "EN" : "中";
+    }
+    btn.addEventListener("click", function(){ lang = lang === "zh" ? "en" : "zh"; apply(); });
+  })();
+  (function(){
+    var io = new IntersectionObserver(function(es){
+      es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("in"); io.unobserve(e.target); } });
+    }, {threshold:.12});
+    document.querySelectorAll(".reveal").forEach(function(el){ io.observe(el); });
+  })();
+</script>
+</body>
+</html>
