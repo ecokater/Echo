@@ -318,3 +318,10 @@ npm.cmd run android:build
 - 已上传：提交 `acb7939`（`docs: redesign README with Clay UI previews`）已推送至 `ecokater/Echo:refactor/architecture`，未夹带用户正在修改的 `Echo-Clay-UI/src/pages/Login.tsx`、`src/assets/` 或 `.idea/`。
 - 还差什么：可在 GitHub 在线页面进一步检查 Mermaid、移动截图表格和徽章加载效果。
 - 下一步 process：如 GitHub 在线渲染存在布局差异，仅对 README 展示层做小范围调整。
+
+### 2026-06-09 · Codex · GitHub 主线切换
+
+- 已完成：将 `ecokater/Echo` 的 `refactor/architecture` 当前内容更新到 `main`，使用 `--force-with-lease` 校验远程旧 main 提交，避免覆盖未知远程改动。
+- 验证：更新后远程 `main` 与 `refactor/architecture` 均指向提交 `e1715e9`。
+- 还差什么：无；GitHub 默认主线现在包含完整新工程与新版 README。
+- 下一步 process：后续开发从 `main` 拉取；确认稳定后可删除或保留 `refactor/architecture` 作为历史工作分支。
