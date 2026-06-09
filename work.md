@@ -315,5 +315,6 @@ npm.cmd run android:build
 - 已完成：基于当前 `Echo-Clay-UI` 实际运行结果生成桌面聊天、手机聊天、手机记忆库和手机“我的”四张新截图，保存至 `Readme/image/echo_clay_*.png`。
 - 已完成：重写根 `README.md`，新增品牌头部、项目徽章、主视觉、产品价值、功能矩阵、隐私 Mermaid 架构、技术栈、快速开始、平台构建状态、路线图、文档和合规说明。
 - 已完成：根 README 不再引用旧 UI 截图；检查全部本地相对链接存在，图片尺寸与 `git diff --check` 通过。
-- 还差什么：尚未提交或推送 GitHub；GitHub 在线渲染效果可在提交后进一步微调。
-- 下一步 process：单独提交 `README.md`、`Readme/image/echo_clay_*.png`、`work.md` 与 `working.md`，推送后检查 GitHub 首页的 Mermaid、移动截图表格和徽章加载效果。
+- 已上传：提交 `acb7939`（`docs: redesign README with Clay UI previews`）已推送至 `ecokater/Echo:refactor/architecture`，未夹带用户正在修改的 `Echo-Clay-UI/src/pages/Login.tsx`、`src/assets/` 或 `.idea/`。
+- 还差什么：可在 GitHub 在线页面进一步检查 Mermaid、移动截图表格和徽章加载效果。
+- 下一步 process：如 GitHub 在线渲染存在布局差异，仅对 README 展示层做小范围调整。
